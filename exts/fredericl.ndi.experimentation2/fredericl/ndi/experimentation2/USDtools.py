@@ -12,9 +12,12 @@ class USDtools():
         if parent_name == "":
             parent_prim = stage.GetDefaultPrim()
         else:
-            parent_prims = [x for x in stage.Traverse() if x.GetName() == parent_name]
+            parent_prims = [x for x in stage.Traverse() if x.GetPath() == parent_name]
             if len(parent_prims) == 0:
-                carb.log_error(f"Error finding parent prim with name:\"{parent_name}\"")
+                parent_prims = [x for x in stage.Traverse() if x.GetName() == parent_name]
+                if len(parent_prims) == 0:
+                    carb.log_error(f"Error finding parent prim with name:\"{parent_name}\"")
+                    return
             parent_prim = parent_prims[0]
         parent_path = parent_prim.GetPath()
         prim_path = f"{parent_path}/{name}"
