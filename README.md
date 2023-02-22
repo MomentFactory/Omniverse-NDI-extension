@@ -10,7 +10,7 @@ Experimenting with ndi feed in Omniverse. See [video](./2023-02-17%2016-23-32.mp
 
 ```
 $ ./link_app.bat --app create
-$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable fredericl.ndi.experimentation2
+$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable fredericl.ndi.experimentation
 ```
 
 From the extension window, select the ndi source (the R button refreshes the list, the L button makes a more thorough search, but will freeze the app for no more than a few seconds). The parent prim option allow you to decide where we'll spawn the necessary scene elements, leave blank for default prim. You can start the stream and create the scene elements (via their respective buttons) independently of each other, or in any order.
