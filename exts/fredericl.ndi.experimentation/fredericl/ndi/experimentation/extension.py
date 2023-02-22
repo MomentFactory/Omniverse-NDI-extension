@@ -10,7 +10,7 @@ from functools import partial
 import asyncio
 
 
-class FredericlNdiExperimentation2Extension(omni.ext.IExt):
+class FredericlNdiExperimentationExtension(omni.ext.IExt):
     WINDOW_NAME = "NDI Connect 2"
     MENU_PATH = f"Window/{WINDOW_NAME}"
 
@@ -20,16 +20,16 @@ class FredericlNdiExperimentation2Extension(omni.ext.IExt):
         self._streams: List[NDIVideoStream] = []
 
         ui.Workspace.set_show_window_fn(
-            FredericlNdiExperimentation2Extension.WINDOW_NAME, partial(self.show_window, None)
+            FredericlNdiExperimentationExtension.WINDOW_NAME, partial(self.show_window, None)
         )
 
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
             self._menu = editor_menu.add_item(
-                FredericlNdiExperimentation2Extension.MENU_PATH, self.show_window, toggle=True, value=True
+                FredericlNdiExperimentationExtension.MENU_PATH, self.show_window, toggle=True, value=True
             )
 
-        ui.Workspace.show_window(FredericlNdiExperimentation2Extension.WINDOW_NAME)
+        ui.Workspace.show_window(FredericlNdiExperimentationExtension.WINDOW_NAME)
 
     def _add_stream(self, name, uri) -> bool:
         video_stream = NDIVideoStream(name, uri)
@@ -57,12 +57,12 @@ class FredericlNdiExperimentation2Extension(omni.ext.IExt):
             self._window.destroy()
             self._window = None
 
-        ui.Workspace.set_show_window_fn(FredericlNdiExperimentation2Extension.WINDOW_NAME, None)
+        ui.Workspace.set_show_window_fn(FredericlNdiExperimentationExtension.WINDOW_NAME, None)
 
     def _set_menu(self, value):
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
-            editor_menu.set_value(FredericlNdiExperimentation2Extension.MENU_PATH, value)
+            editor_menu.set_value(FredericlNdiExperimentationExtension.MENU_PATH, value)
 
     async def _destroy_window_async(self):
         await omni.kit.app.get_app().next_update_async()
@@ -78,7 +78,7 @@ class FredericlNdiExperimentation2Extension(omni.ext.IExt):
     def show_window(self, menu, value):
         if value:
             self._window = NDIWindow(self._add_stream, self._remove_streams,
-                                     FredericlNdiExperimentation2Extension.WINDOW_NAME, width=800, height=200)
+                                     FredericlNdiExperimentationExtension.WINDOW_NAME, width=800, height=200)
             self._window.set_visibility_changed_fn(self._visibility_changed_fn)
         elif self._window:
             self._window.visible = False

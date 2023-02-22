@@ -1,4 +1,4 @@
-# Python Extension Example [fredericl.ndi.experimentation2]
+# Python Extension Example [fredericl.ndi.experimentation]
 
-This is an example of pure python Kit extension. It is intended to be copied and serve as a template to create new extensions.
+Watch ndi feed in Omniverse with the use of dynamic textures
 
