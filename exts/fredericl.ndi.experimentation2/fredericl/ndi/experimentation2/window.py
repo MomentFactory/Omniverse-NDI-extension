@@ -1,5 +1,3 @@
-__all__ = ["NDIWindow"]
-
 from .comboboxModel import ComboboxModel
 from .NDItools import NDItools as ndi
 from .USDtools import USDtools as usd

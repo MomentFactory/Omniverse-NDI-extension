@@ -2,9 +2,6 @@ import NDIlib as ndi
 import carb.profiler
 import time
 import omni.ui
-import numpy as np
-
-DEFAULT_STREAM_URI = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4"
 
 
 class NDItools():
@@ -24,7 +21,6 @@ class NDItools():
 
         ndi.find_destroy(ndi_find)
         ndi.destroy()
-        # result.insert(0, DEFAULT_STREAM_URI)
         return result
 
     def find_ndi_sources_long(seconds: int = 10):
@@ -113,15 +109,11 @@ class NDIVideoStream():
             return
         self._last_read = now
 
-        t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)  # t (type), v (video), a (audio) _ (?)
+        t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)
 
         if t == ndi.FRAME_TYPE_VIDEO:
-            # print('Video data received (%dx%d).' % (v.xres, v.yres))
             frame = v.data
             height, width, channels = frame.shape
             self._dynamic_texture.set_bytes_data(frame.flatten().tolist(), [width, height],
                                                  omni.ui.TextureFormat.BGRA8_UNORM)
             ndi.recv_free_video_v2(self._ndi_recv, v)
-
-        # if t == ndi.FRAME_TYPE_AUDIO:
-        #    print('Audio data received (%d samples).' % a.no_samples)

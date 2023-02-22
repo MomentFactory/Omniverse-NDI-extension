@@ -3,49 +3,11 @@ from .window import NDIWindow
 import omni.ext
 import omni.ui as ui
 import omni.kit.app
-# import cv2 as cv
-# import numpy as np
 import carb
 import carb.profiler
-# import time
 from typing import List
 from functools import partial
 import asyncio
-
-
-"""
-class OpenCvVideoStream():
-    def __init__(self, name: str, stream_uri: str):
-        self.name = name
-        self.uri = stream_uri
-        self._video_capture = cv.VideoCapture(stream_uri)
-        self.fps: float = self._video_capture.get(cv.CAP_PROP_FPS)
-        self.width: int = self._video_capture.get(cv.CAP_PROP_FRAME_WIDTH)
-        self.height: int = self._video_capture.get(cv.CAP_PROP_FRAME_HEIGHT)
-        self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
-        self._last_read = time.time()
-        self.is_ok = self._video_capture.isOpened()
-        if self.fps == 0:
-            self.fps = 24
-
-    @carb.profiler.profile
-    def update(self):
-        now = time.time()
-        time_delta = now - self._last_read
-        if (time_delta < 1.0/self.fps):
-            return
-        self._last_read = now
-
-        ret, frame = self._video_capture.read()
-        if not ret:
-            return
-
-        frame: np.ndarray
-        frame = cv.cvtColor(frame, cv.COLOR_BGR2BGRA)
-        height, width, channels = frame.shape
-        self._dynamic_texture.set_bytes_data(frame.flatten().tolist(), [width, height],
-                                             omni.ui.TextureFormat.BGRA8_UNORM)
-"""
 
 
 class FredericlNdiExperimentation2Extension(omni.ext.IExt):
