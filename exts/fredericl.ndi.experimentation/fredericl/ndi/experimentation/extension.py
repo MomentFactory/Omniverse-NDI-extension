@@ -1,3 +1,4 @@
+from .model import NDIModel
 from .NDItools import NDIVideoStream
 from .window import NDIWindow
 import omni.ext
@@ -11,16 +12,17 @@ import asyncio
 
 
 class FredericlNdiExperimentationExtension(omni.ext.IExt):
-    WINDOW_NAME = "NDI Connect 2"
-    MENU_PATH = f"Window/{WINDOW_NAME}"
+    MENU_PATH = f"Window/NDI/{NDIWindow.WINDOW_NAME}"
 
     def on_startup(self, ext_id):
         stream = omni.kit.app.get_app().get_update_event_stream()
         self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
         self._streams: List[NDIVideoStream] = []
 
+        self._model = NDIModel()
+
         ui.Workspace.set_show_window_fn(
-            FredericlNdiExperimentationExtension.WINDOW_NAME, partial(self.show_window, None)
+            NDIWindow.WINDOW_NAME, partial(self.show_window, None)
         )
 
         editor_menu = omni.kit.ui.get_editor_menu()
@@ -29,7 +31,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
                 FredericlNdiExperimentationExtension.MENU_PATH, self.show_window, toggle=True, value=True
             )
 
-        ui.Workspace.show_window(FredericlNdiExperimentationExtension.WINDOW_NAME)
+        ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
 
     def _add_stream(self, name, uri) -> bool:
         video_stream = NDIVideoStream(name, uri)
@@ -57,7 +59,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
             self._window.destroy()
             self._window = None
 
-        ui.Workspace.set_show_window_fn(FredericlNdiExperimentationExtension.WINDOW_NAME, None)
+        ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, None)
 
     def _set_menu(self, value):
         editor_menu = omni.kit.ui.get_editor_menu()
@@ -77,8 +79,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
     def show_window(self, menu, value):
         if value:
-            self._window = NDIWindow(self._add_stream, self._remove_streams,
-                                     FredericlNdiExperimentationExtension.WINDOW_NAME, width=800, height=200)
+            self._window = NDIWindow(self._model, width=800, height=200)
             self._window.set_visibility_changed_fn(self._visibility_changed_fn)
         elif self._window:
             self._window.visible = False

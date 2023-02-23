@@ -1,11 +1,12 @@
 import NDIlib as ndi
 import carb.profiler
 import time
+from typing import List
 import omni.ui
 
 
 class NDItools():
-    def find_ndi_sources():
+    def find_ndi_sources() -> List[str]:
         if not ndi.initialize():
             return []
 
@@ -23,7 +24,7 @@ class NDItools():
         ndi.destroy()
         return result
 
-    def find_ndi_sources_long(seconds: int = 10):
+    def find_ndi_sources_long(seconds: int = 10) -> List[str]:
         if not ndi.initialize():
             return []
 

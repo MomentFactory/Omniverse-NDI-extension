@@ -1,17 +1,19 @@
+from .model import NDIModel, NDIBinding
 from .comboboxModel import ComboboxModel
-from .NDItools import NDItools as ndi
-from .USDtools import USDtools as usd
 import omni.ui as ui
-from pxr import Tf
+import pyperclip
 
 
 class NDIWindow(ui.Window):
+    WINDOW_NAME = "NDI Dynamic Texture"
 
-    def __init__(self, add_stream_fn, remove_stream_fn, title: str, delegate=None, **kwargs):
-        super().__init__(title, **kwargs)
+    def __init__(self, model: NDIModel, delegate=None, **kwargs):
+        super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
+        self._count = 0  # Eventually obsolete?
+        self._model: NDIModel = model
+        # self._refresh_materials() Removed because scene not always present when called
+        # self._refresh_ndi() Removed because of long search time
         self.frame.set_build_fn(self._build_fn)
-        self._add_stream_fn = add_stream_fn
-        self._remove_stream_fn = remove_stream_fn
 
     def destroy(self):
         super().destroy()
@@ -19,85 +21,79 @@ class NDIWindow(ui.Window):
     def _build_fn(self):
         with self.frame:
             with ui.VStack(style={"margin": 3}):
-                self._row1_ndi_source()
-                self._row2_parent_path()
-                self._row3_create_prim()
+                self._ui_section_header()
+                self._ui_section_bindings()
 
-    def _row1_ndi_source(self):
-        with ui.HStack(height=30):
-            ui.Label("Source:", width=100, alignment=ui.Alignment.RIGHT_CENTER)
+# region UI
+    def _ui_section_header(self):
+        button_style = {"Button": {"stack_direction": ui.Direction.LEFT_TO_RIGHT}}
 
-            self._label = ui.Label("No NDI source found")
+        with ui.HStack(height=0):
+            ui.Button("Create Dynamic Material", image_url="resources/glyphs/menu_plus.svg", image_width=24,
+                      style=button_style, clicked_fn=self._on_click_create_dynamic_material)
+            ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+                      style=button_style, clicked_fn=self._on_click_refresh_ndi)
+            ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+                      style=button_style, clicked_fn=self._on_click_refresh_materials)
 
-            self._minimal_model = ComboboxModel()
-            self._combobox = ui.ComboBox(self._minimal_model)
-            self._refresh_combobox(self._minimal_model)
+    def _ui_section_bindings(self):
+        ComboboxModel.ResetWatchers()
+        with ui.ScrollingFrame():
+            with ui.VStack():
+                bindings: NDIBinding = self._model.get_bindings()
+                if len(bindings) == 0:
+                    ui.Label("No dynamic materials found")
+                else:
+                    for binding in bindings:
+                        NDIBindingPanel(binding, self._model, self, height=0)
+# endregion
 
-            ui.Button("R", clicked_fn=lambda: self._refresh_combobox(self._minimal_model), width=30)
-            ui.Button("L", clicked_fn=lambda: self._refresh_combobox_long(self._minimal_model), width=30)
+# region controls
+    def _on_click_create_dynamic_material(self):
+        suffix: str = "" if self._count == 0 else str(self._count)
+        self._model.create_dynamic_material(f"myDynamicMaterial{suffix}")
+        self._count += 1
+        self.refresh_materials_and_rebuild()
 
-    def _row2_parent_path(self):
-        with ui.HStack(height=30):
-            ui.Label("Parent Prim:", width=100, alignment=ui.Alignment.RIGHT_CENTER)
-            self._parent_prim_path = ui.StringField()
+    def _on_click_refresh_ndi(self):
+        self._refresh_ndi()
 
-    def _row3_create_prim(self):
-        with ui.HStack():
-            ui.Button("Start Stream", clicked_fn=self._on_click_start_stream, width=ui.Percent(25))
-            ui.Button("Stop Streams", clicked_fn=self._on_click_stop_streams, width=ui.Percent(25))
-            ui.Button("Create Scene element", clicked_fn=self._on_click_create_scene_elements, width=ui.Percent(50))
+    def _on_click_refresh_materials(self):
+        self.refresh_materials_and_rebuild()
 
-    def _on_click_start_stream(self):
-        name = self.get_current_item_tfvalid_name()
-        stream_uri = self.get_current_item_fullname()
-        stream_success: bool = self._add_stream_fn(name, stream_uri)
-        if stream_success:
-            print("Stream ok")
-        else:
-            print("Stream not ok")
+    def refresh_materials_and_rebuild(self):
+        self._refresh_materials()
+        self.frame.rebuild()
 
-    def _on_click_stop_streams(self):
-        self._remove_stream_fn()
+    def _refresh_materials(self):
+        self._model.search_for_dynamic_material()
 
-    def _on_click_create_scene_elements(self):
-        name = self.get_current_item_tfvalid_name()
-        path = self._parent_prim_path.model.get_value_as_string()
-        usd.on_click_create(name, path, 192, 108)
+    def _refresh_ndi(self):
+        self._model.search_for_ndi_feeds()
+# endregion
 
-    def _display_label(self):
-        self._label.visible = True
-        self._combobox.visible = False
 
-    def _display_combobox(self):
-        self._label.visible = False
-        self._combobox.visible = True
+class NDIBindingPanel(ui.CollapsableFrame):
+    def __init__(self, binding: NDIBinding, model: NDIModel, window: NDIWindow, **kwargs):
+        name = binding.get_id()
+        super().__init__(name, **kwargs)
+        self._binding: NDIBinding = binding
+        self._window = window
+        with self:
+            with ui.HStack():
+                with ui.VStack():
+                    with ui.HStack():
+                        ui.Button("C", width=30, clicked_fn=self._on_click_copy)
+                        ui.Label(name)
+                    with ui.HStack():
+                        ui.Button("Y", width=30)  # TODO: Not a button (maybe eventually when stats)
+                        self._combobox = ComboboxModel(name, model)
+                        ui.ComboBox(self._combobox)
+                ui.Button("X", width=25, clicked_fn=self._on_click_reset)
 
-    def _refresh_combobox_long(self, model):
-        model.clearAllItems()
+    def _on_click_copy(self):
+        pyperclip.copy(self._binding.get_id())
 
-        sources = ndi.find_ndi_sources_long()
-        if len(sources) == 0:
-            self._display_label()
-        else:
-            self._display_combobox()
-
-        for s in sources:
-            model.append_child_item(None, s)
-
-    def _refresh_combobox(self, model):
-        model.clearAllItems()
-
-        sources = ndi.find_ndi_sources()
-        if len(sources) == 0:
-            self._display_label()
-        else:
-            self._display_combobox()
-
-        for s in sources:
-            model.append_child_item(None, s)
-
-    def get_current_item_tfvalid_name(self):
-        return Tf.MakeValidIdentifier(ndi.get_name_from_ndi_name(self._minimal_model.currentvalue()))
-
-    def get_current_item_fullname(self):
-        return self._minimal_model.currentvalue()
+    def _on_click_reset(self):
+        self._combobox.select_none()
+        self.collapsed = True
