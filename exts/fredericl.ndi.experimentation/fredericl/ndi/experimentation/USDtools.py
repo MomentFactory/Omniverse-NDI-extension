@@ -1,6 +1,14 @@
 import omni.ext
 from typing import List
 from pxr import Usd, UsdShade, Sdf
+from dataclasses import dataclass
+import carb
+
+
+@dataclass
+class DynamicPrim:
+    path: str
+    name: str
 
 
 class USDtools():
@@ -18,7 +26,7 @@ class USDtools():
         material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
         return material
 
-    def find_all_dynamic_materials() -> List[str]:
+    def find_all_dynamic_materials() -> List[DynamicPrim]:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
         if stage is None:  # Sometimes stage isn't loaded when the frame draws
@@ -26,6 +34,7 @@ class USDtools():
 
         shaders: List[UsdShade.Shader] = [UsdShade.Shader(x) for x in stage.Traverse() if x.IsA(UsdShade.Shader)]
         dynamic_shaders: List[str] = []
+        result: List[DynamicPrim] = []
         for shader in shaders:
             path: str = shader.GetInput("diffuse_texture").Get().path
             compare: str = "dynamic://"
@@ -36,5 +45,18 @@ class USDtools():
                     name = path[length:]
                     if name not in dynamic_shaders:
                         dynamic_shaders.append(name)
+                        p = DynamicPrim(shader.GetPath().pathString, name)
+                        result.append(p)
 
-        return dynamic_shaders
+        return result
+
+    def set_prim_ndi_attribute(path: str, value: str):
+        usd_context = omni.usd.get_context()
+        stage: Usd.Stage = usd_context.get_stage()
+
+        prim: Usd.Prim = stage.GetPrimAtPath(path)
+        if not prim.IsValid():
+            carb.log_error(f"Could not set the ndi attribute of prim at {path}")
+            return
+
+        prim.CreateAttribute('mf:ndi_source', Sdf.ValueTypeNames.String).Set(value)

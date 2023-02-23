@@ -3,14 +3,17 @@ from .USDtools import USDtools
 from .NDItools import NDItools
 from typing import List
 import carb
+from dataclasses import dataclass
 
 
+@dataclass
 class NDIBinding():
     # TODO: Make serializable (custom properties in prim) and read at start + write when changed
     # So window refresh doesn't erase all data
-    def __init__(self, dynamic_id: str, ndi_id: str):
+    def __init__(self, dynamic_id: str, ndi_id: str, path: str):
         self._dynamic_id = dynamic_id
         self._ndi_id = ndi_id
+        self._path = path
 
     def get_id(self) -> str:
         return self._dynamic_id
@@ -20,6 +23,7 @@ class NDIBinding():
 
     def set_ndi_id(self, ndi_id: str):
         self._ndi_id = ndi_id
+        USDtools.set_prim_ndi_attribute(self._path, self._ndi_id)
 
 
 class NDIModel():
@@ -36,10 +40,11 @@ class NDIModel():
         result = USDtools.find_all_dynamic_materials()
 
         # Add new shader sources as bindings
-        for dynamic_id in result:
+        for dynamic_prim in result:
+            dynamic_id = dynamic_prim.name
             binding = self._get_binding_from_id(dynamic_id)
             if binding is None:
-                binding = NDIBinding(dynamic_id, None)
+                binding = NDIBinding(dynamic_id, ComboboxModel.NONE.value(), dynamic_prim.path)
                 self._bindings.append(binding)
 
         # Remove unresolved bindings
@@ -47,8 +52,8 @@ class NDIModel():
         for i in range(len(self._bindings)):
             binding = self._bindings[i]
             found: bool = False
-            for dynamic_id in result:
-                if binding.get_id() == dynamic_id:
+            for dynamic_prim in result:
+                if binding.get_id() == dynamic_prim.name:
                     found = True
             if not found:
                 to_remove.append(i)
