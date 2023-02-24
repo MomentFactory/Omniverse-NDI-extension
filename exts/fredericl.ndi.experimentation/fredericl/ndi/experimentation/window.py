@@ -35,6 +35,7 @@ class NDIWindow(ui.Window):
                       style=button_style, clicked_fn=self._on_click_refresh_ndi)
             ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
+            ui.Button("Kill all streams", clicked_fn=self._model.kill_all_streams)
 
     def _ui_section_bindings(self):
         ComboboxModel.ResetWatchers()
@@ -63,6 +64,7 @@ class NDIWindow(ui.Window):
 
     def refresh_materials_and_rebuild(self):
         self._refresh_materials()
+        # TODO: Better rebuild (sub component instead of whole window)
         self.frame.rebuild()
 
     def _refresh_materials(self):
@@ -74,11 +76,15 @@ class NDIWindow(ui.Window):
 
 
 class NDIBindingPanel(ui.CollapsableFrame):
+    NDI_INACTIVE = "resources/glyphs/error.svg"
+    NDI_ACTIVE = "resources/glyphs/check_solid.svg"
+
     def __init__(self, binding: NDIBinding, model: NDIModel, window: NDIWindow, **kwargs):
         name = binding.get_id()
         super().__init__(name, **kwargs)
         self._binding: NDIBinding = binding
         self._window = window
+        self._model = model
         with self:
             with ui.HStack():
                 with ui.VStack():
@@ -86,10 +92,15 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         ui.Button("C", width=30, clicked_fn=self._on_click_copy)
                         ui.Label(name)
                     with ui.HStack():
-                        ui.Button("Y", width=30)  # TODO: Not a button (maybe eventually when stats)
-                        self._combobox = ComboboxModel(name, model, binding.get_source())
+                        self._status_label_inactive = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
+                        self._status_label_active = ui.Image(NDIBindingPanel.NDI_ACTIVE, width=30)
+                        self._on_ndi_status_change()
+                        self._combobox = ComboboxModel(name, model, binding.get_source(), self._on_ndi_status_change)
+                        binding.register_status_fn(self._on_ndi_status_change)
                         ui.ComboBox(self._combobox)
-                ui.Button("X", width=25, clicked_fn=self._on_click_reset)
+                        ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
+                        ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
+                # ui.Button("X", width=25, clicked_fn=self._on_click_reset)
 
     def _on_click_copy(self):
         pyperclip.copy(self._binding.get_id())
@@ -97,3 +108,20 @@ class NDIBindingPanel(ui.CollapsableFrame):
     def _on_click_reset(self):
         self._combobox.select_none()
         self.collapsed = True
+
+    def _on_click_play_ndi(self):
+        self._model.add_stream(self._binding.get_id(), self._binding.get_source())
+
+    def _on_click_pause_ndi(self):
+        self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
+
+    def _on_ndi_status_change(self):
+        status = self._binding.get_ndi_status()
+        if status:
+            self._status_label_active.visible = True
+            self._status_label_inactive.visible = False
+        else:
+            self._status_label_active.visible = False
+            self._status_label_inactive.visible = True
+        # TODO: Better rebuild (sub component instead of whole window)
+        self._window.frame.rebuild()

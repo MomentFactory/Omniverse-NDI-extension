@@ -1,3 +1,4 @@
+from .comboboxModel import ComboboxModel
 import NDIlib as ndi
 import carb.profiler
 import time
@@ -5,7 +6,30 @@ from typing import List
 import omni.ui
 
 
+class NDIData():
+    def __init__(self, source: str, active: bool = False):
+        self._source = source
+        self._active = active
+        self._on_value_changed_fn = None
+
+    def get_source(self) -> str:
+        return self._source
+
+    def is_active(self) -> bool:
+        return self._active
+
+    def set_active(self, active: bool = True):
+        self._active = active
+        if self._on_value_changed_fn is not None:
+            self._on_value_changed_fn()
+
+    def set_active_value_changed_fn(self, fn):
+        self._on_value_changed_fn = fn
+
+
 class NDItools():
+    NONE_DATA = NDIData(ComboboxModel.NONE_VALUE)
+
     def find_ndi_sources() -> List[str]:
         if not ndi.initialize():
             return []

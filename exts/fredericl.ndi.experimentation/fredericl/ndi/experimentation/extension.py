@@ -1,12 +1,8 @@
 from .model import NDIModel
-from .NDItools import NDIVideoStream
 from .window import NDIWindow
 import omni.ext
 import omni.ui as ui
 import omni.kit.app
-import carb
-import carb.profiler
-from typing import List
 from functools import partial
 import asyncio
 
@@ -15,10 +11,6 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
     MENU_PATH = f"Window/NDI/{NDIWindow.WINDOW_NAME}"
 
     def on_startup(self, ext_id):
-        stream = omni.kit.app.get_app().get_update_event_stream()
-        self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
-        self._streams: List[NDIVideoStream] = []
-
         self._model = NDIModel()
 
         ui.Workspace.set_show_window_fn(
@@ -33,26 +25,8 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
         ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
 
-    def _add_stream(self, name, uri) -> bool:
-        video_stream = NDIVideoStream(name, uri)
-        if not video_stream.is_ok:
-            carb.log_error(f"Error opening stream: {uri}")
-            return False
-        self._streams.append(video_stream)
-        return True
-
-    def _remove_streams(self):
-        self._streams = []
-        print("Streams reset")
-
-    @carb.profiler.profile
-    def _on_update(self, e):
-        for stream in self._streams:
-            stream.update()
-
     def on_shutdown(self):
-        self._sub.unsubscribe()
-        self._streams = []
+        self._model.on_shutdown()
 
         self._menu = None
         if self._window:
