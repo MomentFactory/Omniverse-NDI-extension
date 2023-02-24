@@ -9,9 +9,12 @@ import carb
 class DynamicPrim:
     path: str
     name: str
+    ndi: str
 
 
 class USDtools():
+    ATTR_NAME = 'ndi:source'
+
     def create_dynamic_material(name: str) -> UsdShade.Material:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
@@ -45,7 +48,9 @@ class USDtools():
                     name = path[length:]
                     if name not in dynamic_shaders:
                         dynamic_shaders.append(name)
-                        p = DynamicPrim(shader.GetPath().pathString, name)
+                        attr = shader.GetPrim().GetAttribute(USDtools.ATTR_NAME)
+                        attr = attr.Get() if attr.IsValid() else None
+                        p = DynamicPrim(shader.GetPath().pathString, name, attr)
                         result.append(p)
 
         return result
@@ -59,4 +64,4 @@ class USDtools():
             carb.log_error(f"Could not set the ndi attribute of prim at {path}")
             return
 
-        prim.CreateAttribute('mf:ndi_source', Sdf.ValueTypeNames.String).Set(value)
+        prim.CreateAttribute(USDtools.ATTR_NAME, Sdf.ValueTypeNames.String).Set(value)

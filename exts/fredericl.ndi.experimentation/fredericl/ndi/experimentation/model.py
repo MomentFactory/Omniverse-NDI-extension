@@ -1,15 +1,11 @@
 from .comboboxModel import ComboboxModel
-from .USDtools import USDtools
+from .USDtools import USDtools, DynamicPrim
 from .NDItools import NDItools
 from typing import List
 import carb
-from dataclasses import dataclass
 
 
-@dataclass
 class NDIBinding():
-    # TODO: Make serializable (custom properties in prim) and read at start + write when changed
-    # So window refresh doesn't erase all data
     def __init__(self, dynamic_id: str, ndi_id: str, path: str):
         self._dynamic_id = dynamic_id
         self._ndi_id = ndi_id
@@ -37,14 +33,16 @@ class NDIModel():
         self.search_for_dynamic_material()
 
     def search_for_dynamic_material(self):
-        result = USDtools.find_all_dynamic_materials()
+        result: List[DynamicPrim] = USDtools.find_all_dynamic_materials()
 
         # Add new shader sources as bindings
         for dynamic_prim in result:
             dynamic_id = dynamic_prim.name
+            ndi_source = dynamic_prim.ndi
             binding = self._get_binding_from_id(dynamic_id)
             if binding is None:
-                binding = NDIBinding(dynamic_id, ComboboxModel.NONE.value(), dynamic_prim.path)
+                source = ndi_source if ndi_source is not None else ComboboxModel.NONE_VALUE
+                binding = NDIBinding(dynamic_id, source, dynamic_prim.path)
                 self._bindings.append(binding)
 
         # Remove unresolved bindings
@@ -61,6 +59,7 @@ class NDIModel():
             self._bindings.pop(index)
 
         self._sort_bindings()
+        self._search_for_ndi_in_bindings()
 # endregion
 
 # region bindings
@@ -73,7 +72,6 @@ class NDIModel():
             carb.log_error(f"No binding found for {dynamic_id}")
         else:
             binding.set_ndi_id(ndi_id)
-            print(f"Binding successful between: {binding.get_id()} with {binding.get_source()}")
 
     def remove_binding(self, binding: NDIBinding):
         self._bindings.remove(binding)
@@ -90,21 +88,38 @@ class NDIModel():
 # endregion
 
 # region NDI
+    def _add_bindings_to_feeds(self):
+        for binding in self._bindings:
+            ndi = binding.get_source()
+            found = next((x for x in self._ndi_feeds if x == ndi), None)
+            if found is None:
+                self._ndi_feeds.append(ndi)
+
     def get_ndi_feeds(self) -> List[str]:
         return self._ndi_feeds
 
+    def _search_for_ndi_in_bindings(self):
+        self._reset_ndi_feeds()
+        self._add_bindings_to_feeds()
+        self._push_ndi_to_combobox()
+
     def search_for_ndi_feeds(self):
-        self._ndi_feeds = [ComboboxModel.NONE.value()]
+        self._reset_ndi_feeds()
+        self._add_bindings_to_feeds()
+
+        # Add feeds from search
         others = NDItools.find_ndi_sources_long()
-        self._ndi_feeds.extend(others)
+        for other in others:
+            found = next((x for x in self._ndi_feeds if x == other), None)
+            if found is None:
+                self._ndi_feeds.append(other)
 
-        # TODO: NDI feed disappeared
-        # for binding in self._bindings:
-        # source = binding.get_source()
-        # match = next((x for x in self._ndi_feeds if x == source), None)
-        # if match is None:
-        # TODO: make status unknown & keep the feed in the list, change the index to correspond
+        self._push_ndi_to_combobox()
 
+    def _reset_ndi_feeds(self):
+        self._ndi_feeds = [ComboboxModel.NONE_VALUE]
+
+    def _push_ndi_to_combobox(self):
         ComboboxModel.clearAllItems()
         for x in self._ndi_feeds:
             ComboboxModel.AddItem(x)

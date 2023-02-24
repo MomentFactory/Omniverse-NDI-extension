@@ -12,7 +12,8 @@ class ComboboxItem(ui.AbstractItem):
 
 
 class ComboboxModel(ui.AbstractItemModel):
-    NONE = ComboboxItem("NONE")
+    NONE_VALUE = "NONE"
+    NONE = ComboboxItem(NONE_VALUE)
     items: List[str] = [NONE]
     watchers = []
 
@@ -35,7 +36,7 @@ class ComboboxModel(ui.AbstractItemModel):
     def ResetWatchers():
         ComboboxModel.watchers = []
 
-    def __init__(self, name: str, model):
+    def __init__(self, name: str, model, value: str):
         super().__init__()
 
         self._model = model
@@ -46,12 +47,14 @@ class ComboboxModel(ui.AbstractItemModel):
             lambda a: self._current_index_changed_fn()
         )
 
-        self._current_index_changed_fn()
+        index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)
+        self._current_index.set_value(index)
 
         ComboboxModel.watchers.append(self)
 
     def _current_index_changed_fn(self):
-        self._item_changed(None), self._model.set_binding(self._name, self.currentvalue())
+        self._model.set_binding(self._name, self.currentvalue())
+        self._item_changed(None)
 
     def currentvalue(self):
         self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]

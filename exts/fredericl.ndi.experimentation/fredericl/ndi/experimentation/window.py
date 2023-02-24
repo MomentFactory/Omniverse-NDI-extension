@@ -87,7 +87,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         ui.Label(name)
                     with ui.HStack():
                         ui.Button("Y", width=30)  # TODO: Not a button (maybe eventually when stats)
-                        self._combobox = ComboboxModel(name, model)
+                        self._combobox = ComboboxModel(name, model, binding.get_source())
                         ui.ComboBox(self._combobox)
                 ui.Button("X", width=25, clicked_fn=self._on_click_reset)
 
