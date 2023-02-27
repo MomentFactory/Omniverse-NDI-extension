@@ -100,7 +100,6 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         ui.ComboBox(self._combobox)
                         ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
                         ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
-                # ui.Button("X", width=25, clicked_fn=self._on_click_reset)
 
     def _on_click_copy(self):
         pyperclip.copy(self._binding.get_id_full())

@@ -12,10 +12,9 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
     def on_startup(self, ext_id):
         self._model = NDIModel()
+        self._window = None
 
-        ui.Workspace.set_show_window_fn(
-            NDIWindow.WINDOW_NAME, partial(self.show_window, None)
-        )
+        ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, partial(self.show_window, None))
 
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
@@ -27,12 +26,10 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
     def on_shutdown(self):
         self._model.on_shutdown()
-
         self._menu = None
         if self._window:
             self._window.destroy()
             self._window = None
-
         ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, None)
 
     def _set_menu(self, value):
