@@ -103,7 +103,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
                 # ui.Button("X", width=25, clicked_fn=self._on_click_reset)
 
     def _on_click_copy(self):
-        pyperclip.copy(self._binding.get_id())
+        pyperclip.copy(self._binding.get_id_full())
 
     def _on_click_reset(self):
         self._combobox.select_none()

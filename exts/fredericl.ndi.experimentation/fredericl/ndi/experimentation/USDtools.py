@@ -14,6 +14,7 @@ class DynamicPrim:
 
 class USDtools():
     ATTR_NAME = 'ndi:source'
+    PREFIX = "dynamic://"
 
     def create_dynamic_material(name: str) -> UsdShade.Material:
         usd_context = omni.usd.get_context()
@@ -25,7 +26,7 @@ class USDtools():
         shader.SetSourceAsset("OmniPBR.mdl", "mdl")
         shader.SetSourceAssetSubIdentifier("OmniPBR", "mdl")
         shader.CreateIdAttr("OmniPBR")
-        shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(f"dynamic://{name}")
+        shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(f"{USDtools.PREFIX}{name}")
         material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
         return material
 
@@ -40,11 +41,10 @@ class USDtools():
         result: List[DynamicPrim] = []
         for shader in shaders:
             path: str = shader.GetInput("diffuse_texture").Get().path
-            compare: str = "dynamic://"
-            length: int = len(compare)
+            length: int = len(USDtools.PREFIX)
             if len(path) > length:
                 candidate = path[:length]
-                if candidate == compare:
+                if candidate == USDtools.PREFIX:
                     name = path[length:]
                     if name not in dynamic_shaders:
                         dynamic_shaders.append(name)

@@ -15,6 +15,9 @@ class NDIBinding():
     def get_id(self) -> str:
         return self._dynamic_id
 
+    def get_id_full(self):
+        return USDtools.PREFIX + self._dynamic_id
+
     def get_source(self) -> str:
         return self._ndi.get_source()
 
@@ -37,6 +40,7 @@ class NDIModel():
         stream = omni.kit.app.get_app().get_update_event_stream()
         self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
         self._streams: List[NDIVideoStream] = []
+        # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
 # region update loop
     def add_stream(self, name: str, uri: str):
