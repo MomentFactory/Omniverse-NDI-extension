@@ -1,12 +1,12 @@
 [package]
-version = "1.0.0"
+version = "2.0.0"
 
 title = "fredericl ndi experimentation"
-description="Python extension to connect dynamic textures to ndi feed(s)"
+description = "Python extension to connect dynamic textures to ndi feed(s)"
 authors = ["Frederic Lestage"]
 
 readme  = "docs/README.md"
-changelog="docs/CHANGELOG.md"
+changelog = "docs/CHANGELOG.md"
 repository = "https://gitlab.com/momentfactory/products/xagora/omniverse/kit-exts-ndi/"
 
 category = "NDI"

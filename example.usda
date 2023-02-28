@@ -7,8 +7,8 @@
                 double radius = 500
             }
             dictionary Perspective = {
-                double3 position = (1315.4602153954813, 1307.539873310311, 4941.632813514395)
-                double3 target = (310.65127504161865, -308.2039907394578, -420.8801763503925)
+                double3 position = (-0.0713092489795839, 51.01501168450141, 542.2366014082535)
+                double3 target = (-7.5901107720537855, -8.726656898874715, -134.38552079496083)
             }
             dictionary Right = {
                 double3 position = (-50000, 0, 0)
@@ -21,11 +21,13 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
+            string authoring_layer = "./benchmarks_2mat.usda"
             dictionary muteness = {
             }
         }
         dictionary renderSettings = {
             float3 "rtx:debugView:pixelDebug:textColor" = (0, 1e18, 0)
+            bool "rtx:ecoMode:enabled" = 0
             float3 "rtx:fog:fogColor" = (0.75, 0.75, 0.75)
             bool "rtx:indirectDiffuse:enabled" = 1
             float3 "rtx:post:backgroundZeroAlpha:backgroundDefaultColor" = (0, 0, 0)
@@ -66,12 +68,12 @@
 
 def Xform "World"
 {
-    def Mesh "Plane"
+    def Mesh "left_mesh"
     {
         float3[] extent = [(-50, 0, -50), (50, 0, 50)]
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 2, 3, 1]
-        rel material:binding = </Looks/myDynamicMaterial/Material> (
+        rel material:binding = </Looks/left_mat/Material> (
             bindMaterialAs = "weakerThanDescendants"
         )
         normal3f[] normals = [(0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0)] (
@@ -83,17 +85,17 @@ def Xform "World"
         )
         uniform token subdivisionScheme = "none"
         double3 xformOp:rotateXYZ = (-90, 0, 0)
-        double3 xformOp:scale = (19.2, 10.8, 10.8)
-        double3 xformOp:translate = (-1169.1755640595868, 0, 0)
+        double3 xformOp:scale = (1.92, 1, 1.08)
+        double3 xformOp:translate = (-100, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
-    def Mesh "Plane_01"
+    def Mesh "right_mesh"
     {
         float3[] extent = [(-50, 0, -50), (50, 0, 50)]
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 2, 3, 1]
-        rel material:binding = </Looks/myDynamicMaterial1/Material> (
+        rel material:binding = </Looks/right_mat/Material> (
             bindMaterialAs = "weakerThanDescendants"
         )
         normal3f[] normals = [(0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0)] (
@@ -105,8 +107,8 @@ def Xform "World"
         )
         uniform token subdivisionScheme = "none"
         double3 xformOp:rotateXYZ = (-90, 0, 0)
-        double3 xformOp:scale = (19.2, 10.8, 10.8)
-        double3 xformOp:translate = (1088.7934136905503, 0, 0)
+        double3 xformOp:scale = (1.92, 1, 1.08)
+        double3 xformOp:translate = (100, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 }
@@ -162,66 +164,15 @@ def Xform "Environment"
         double3 xformOp:translate = (0, 305, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
-
-    def Scope "Looks"
-    {
-        def Material "Grid"
-        {
-            token outputs:mdl:displacement.connect = </Environment/Looks/Grid/Shader.outputs:out>
-            token outputs:mdl:surface.connect = </Environment/Looks/Grid/Shader.outputs:out>
-            token outputs:mdl:volume.connect = </Environment/Looks/Grid/Shader.outputs:out>
-
-            def Shader "Shader"
-            {
-                uniform token info:implementationSource = "sourceAsset"
-                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
-                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                float inputs:albedo_add = 0
-                float inputs:albedo_brightness = 0.52
-                float inputs:albedo_desaturation = 1
-                asset inputs:diffuse_texture = @https://omniverse-content-production.s3.us-west-2.amazonaws.com/Assets/Scenes/Templates/Default/SubUSDs/textures/ov_uv_grids_basecolor_1024.png@ (
-                    colorSpace = "sRGB"
-                    customData = {
-                        asset default = @@
-                    }
-                )
-                bool inputs:project_uvw = 0
-                float inputs:reflection_roughness_constant = 0.333
-                float inputs:texture_rotate = 0 (
-                    customData = {
-                        float default = 0
-                    }
-                )
-                float2 inputs:texture_scale = (0.5, 0.5) (
-                    customData = {
-                        float2 default = (1, 1)
-                    }
-                )
-                float2 inputs:texture_translate = (0, 0) (
-                    customData = {
-                        float2 default = (0, 0)
-                    }
-                )
-                bool inputs:world_or_object = 0 (
-                    customData = {
-                        bool default = 0
-                    }
-                )
-                token outputs:out (
-                    renderType = "material"
-                )
-            }
-        }
-    }
 }
 
 def "Looks"
 {
-    def "myDynamicMaterial"
+    def "left_mat"
     {
         def Material "Material"
         {
-            token outputs:surface.connect = </Looks/myDynamicMaterial/Material/Shader.outputs:surface>
+            token outputs:surface.connect = </Looks/left_mat/Material/Shader.outputs:surface>
 
             def Shader "Shader"
             {
@@ -229,18 +180,25 @@ def "Looks"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                asset inputs:diffuse_texture = @dynamic://mydynamicmaterial@
-                custom string ndi:source = "MF-PC-493 (Test Pattern)"
+                asset inputs:diffuse_texture = @dynamic://dynamic_left@ (
+                    customData = {
+                        asset default = @@
+                    }
+                    displayGroup = "Albedo"
+                    displayName = "Albedo Map"
+                    hidden = false
+                )
+                custom string ndi:source = "MY-PC (Test Pattern)"
                 token outputs:surface
             }
         }
     }
 
-    def "myDynamicMaterial1"
+    def "right_mat"
     {
         def Material "Material"
         {
-            token outputs:surface.connect = </Looks/myDynamicMaterial1/Material/Shader.outputs:surface>
+            token outputs:surface.connect = </Looks/right_mat/Material/Shader.outputs:surface>
 
             def Shader "Shader"
             {
@@ -248,8 +206,15 @@ def "Looks"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                asset inputs:diffuse_texture = @dynamic://mydynamicmaterial1@
-                custom string ndi:source = "MF-PC-493 (Test Pattern 2)"
+                asset inputs:diffuse_texture = @dynamic://dynamic_right@ (
+                    customData = {
+                        asset default = @@
+                    }
+                    displayGroup = "Albedo"
+                    displayName = "Albedo Map"
+                    hidden = false
+                )
+                custom string ndi:source = "MY-PC (Test Pattern 2)"
                 token outputs:surface
             }
         }
