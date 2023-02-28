@@ -5,8 +5,8 @@ Experimenting with ndi feed in Omniverse.
 ## Getting started
 
 - Requires Kit >= 104.1
-- Tested in Create 2022.3.1
-- Not working in Code 2022.3.1
+- Tested in Create 2022.3.3
+- Not working in Code
 
 ```
 $ ./link_app.bat --app create
