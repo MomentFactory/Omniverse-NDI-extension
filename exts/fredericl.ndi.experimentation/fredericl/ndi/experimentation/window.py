@@ -2,6 +2,7 @@ from .model import NDIModel, NDIBinding
 from .comboboxModel import ComboboxModel
 import omni.ui as ui
 import pyperclip
+import carb
 
 
 class NDIWindow(ui.Window):
@@ -9,7 +10,6 @@ class NDIWindow(ui.Window):
 
     def __init__(self, model: NDIModel, delegate=None, **kwargs):
         super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
-        self._count = 0  # Eventually obsolete?
         self._model: NDIModel = model
         # self._refresh_materials() Removed because scene not always present when called
         # self._refresh_ndi() Removed because of long search time
@@ -29,13 +29,16 @@ class NDIWindow(ui.Window):
         button_style = {"Button": {"stack_direction": ui.Direction.LEFT_TO_RIGHT}}
 
         with ui.HStack(height=0):
+            self._dynamic_name = ui.StringField()
+            self._dynamic_name.model.set_value("myDynamicMaterial")
             ui.Button("Create Dynamic Material", image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
+        with ui.HStack(height=0):
             ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_ndi)
             ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
-            ui.Button("Kill all streams", clicked_fn=self._model.kill_all_streams)
+            ui.Button("Stop all streams", clicked_fn=self._model.kill_all_streams)
 
     def _ui_section_bindings(self):
         ComboboxModel.ResetWatchers()
@@ -51,9 +54,11 @@ class NDIWindow(ui.Window):
 
 # region controls
     def _on_click_create_dynamic_material(self):
-        suffix: str = "" if self._count == 0 else str(self._count)
-        self._model.create_dynamic_material(f"myDynamicMaterial{suffix}")
-        self._count += 1
+        name: str = self._dynamic_name.model.get_value_as_string()
+        if name == "":
+            carb.log_warn("Cannot create dynamic material with empty name")
+            return
+        self._model.create_dynamic_material(name)
         self.refresh_materials_and_rebuild()
 
     def _on_click_refresh_ndi(self):
