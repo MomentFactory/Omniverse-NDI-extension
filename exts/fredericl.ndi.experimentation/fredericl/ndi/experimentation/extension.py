@@ -25,8 +25,10 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
         ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
 
     def on_shutdown(self):
-        self._model.on_shutdown()
-        self._menu = None
+        if self._model:
+            self._model.on_shutdown()
+        if self._menu:
+            self._menu = None
         if self._window:
             self._window.destroy()
             self._window = None

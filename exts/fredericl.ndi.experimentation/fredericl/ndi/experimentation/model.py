@@ -1,6 +1,6 @@
 from .comboboxModel import ComboboxModel
 from .USDtools import USDtools, DynamicPrim
-from .NDItools import NDItools, NDIData, NDIVideoStream
+from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy
 from typing import List
 import carb
 import omni.kit.app
@@ -36,6 +36,7 @@ class NDIModel():
     def __init__(self, ):
         self._bindings: List[NDIBinding] = []
         self._ndi_feeds: List[NDIData] = []
+        self._reset_ndi_feeds()
 
         stream = omni.kit.app.get_app().get_update_event_stream()
         self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
@@ -44,7 +45,18 @@ class NDIModel():
 
 # region update loop
     def add_stream(self, name: str, uri: str):
-        video_stream = NDIVideoStream(name, uri)
+        if uri == ComboboxModel.NONE_VALUE:
+            carb.log_warn("Won't create stream without ndi source")
+            return
+
+        if uri == ComboboxModel.PROXY_VALUE:
+            video_stream = NDIVideoStreamProxy(name, uri)
+            self._add_stream(video_stream, uri)
+        else:
+            video_stream = NDIVideoStream(name, uri)
+            self._add_stream(video_stream, uri)
+
+    def _add_stream(self, video_stream, uri):
         if not video_stream.is_ok:
             carb.log_error(f"Error opening stream: {uri}")
             return
@@ -55,10 +67,8 @@ class NDIModel():
 
     def remove_stream(self, name: str, uri: str):
         stream: NDIVideoStream = next((x for x in self._streams if x.name == name and x.uri == uri), None)
-        if stream is None:
-            carb.log_error(f"Could not find stream with name={name} and source={uri}")
-            return
-        self._streams.remove(stream)
+        if stream is not None:  # could be none if already stopped
+            self._streams.remove(stream)
 
     @carb.profiler.profile
     def _on_update(self, e):
@@ -162,7 +172,7 @@ class NDIModel():
         self._push_ndi_to_combobox()
 
     def _reset_ndi_feeds(self):
-        self._ndi_feeds = [NDItools.NONE_DATA]
+        self._ndi_feeds = [NDItools.NONE_DATA, NDItools.PROXY_DATA]
 
     def _push_ndi_to_combobox(self):
         ComboboxModel.clearAllItems()
