@@ -1,6 +1,7 @@
 from .comboboxModel import ComboboxModel
 import NDIlib as ndi
 import carb.profiler
+import carb
 import time
 from typing import List
 import omni.ui
@@ -119,7 +120,7 @@ class NDIVideoStream():
         ndi.recv_connect(self._ndi_recv, source)
         ndi.find_destroy(ndi_find)
 
-        self.fps = 30
+        self.fps = 120
         self._last_read = time.time()
         self.is_ok = True
 
@@ -139,8 +140,10 @@ class NDIVideoStream():
         t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)
 
         if t == ndi.FRAME_TYPE_VIDEO:
+            self.fps = v.frame_rate_N / v.frame_rate_D
+            # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
             frame = v.data
-            height, width, channels = frame.shape
+            height, width, _ = frame.shape
             self._dynamic_texture.set_bytes_data(frame.flatten().tolist(), [width, height],
                                                  omni.ui.TextureFormat.BGRA8_UNORM)
             ndi.recv_free_video_v2(self._ndi_recv, v)
