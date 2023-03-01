@@ -34,7 +34,7 @@ class USDtools():
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
         if stage is None:  # Sometimes stage isn't loaded when the frame draws
-            return
+            return []
 
         shaders: List[UsdShade.Shader] = [UsdShade.Shader(x) for x in stage.Traverse() if x.IsA(UsdShade.Shader)]
         dynamic_shaders: List[str] = []
