@@ -1,9 +1,11 @@
 from .comboboxModel import ComboboxModel
 import NDIlib as ndi
 import carb.profiler
+import carb
 import time
 from typing import List
 import omni.ui
+import numpy as np
 
 
 class NDIData():
@@ -29,6 +31,7 @@ class NDIData():
 
 class NDItools():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE)
+    PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
 
     def find_ndi_sources() -> List[str]:
         if not ndi.initialize():
@@ -117,7 +120,7 @@ class NDIVideoStream():
         ndi.recv_connect(self._ndi_recv, source)
         ndi.find_destroy(ndi_find)
 
-        self.fps = 30
+        self.fps = 120
         self._last_read = time.time()
         self.is_ok = True
 
@@ -137,8 +140,44 @@ class NDIVideoStream():
         t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)
 
         if t == ndi.FRAME_TYPE_VIDEO:
+            self.fps = v.frame_rate_N / v.frame_rate_D
+            # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
             frame = v.data
-            height, width, channels = frame.shape
+            height, width, _ = frame.shape
             self._dynamic_texture.set_bytes_data(frame.flatten().tolist(), [width, height],
                                                  omni.ui.TextureFormat.BGRA8_UNORM)
             ndi.recv_free_video_v2(self._ndi_recv, v)
+
+
+class NDIVideoStreamProxy(NDIVideoStream):
+    def __init__(self, name: str, stream_uri: str):
+        self.name = name
+        self.uri = stream_uri
+        self.is_ok = False
+        self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
+
+        w = 1920
+        h = 1080
+        c = np.array([255, 0, 0, 255], np.uint8)
+        frame = np.full((h, w, len(c)), c, dtype=np.uint8)
+        self._frame = frame
+        self._width = w
+        self._height = h
+
+        self.fps = 30
+        self._last_read = time.time()
+        self.is_ok = True
+
+    def destroy(self):
+        super.destroy()
+
+    @carb.profiler.profile
+    def update(self):
+        now = time.time()
+        time_delta = now - self._last_read
+        if (time_delta < 1.0 / self.fps):
+            return
+        self._last_read = now
+
+        self._dynamic_texture.set_bytes_data(self._frame.flatten().tolist(), [self._width, self._height],
+                                             omni.ui.TextureFormat.RGBA8_UNORM)

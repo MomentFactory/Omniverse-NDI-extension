@@ -3,6 +3,7 @@ from typing import List
 from pxr import Usd, UsdShade, Sdf
 from dataclasses import dataclass
 import carb
+import numpy as np
 
 
 @dataclass
@@ -28,13 +29,19 @@ class USDtools():
         shader.CreateIdAttr("OmniPBR")
         shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(f"{USDtools.PREFIX}{name}")
         material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
+
+        magenta = np.array([255, 0, 255, 255], np.uint8)
+        frame = np.full((1, 1, 4), magenta, dtype=np.uint8)
+        dynamic_texture = omni.ui.DynamicTextureProvider(name)
+        dynamic_texture.set_bytes_data(frame.flatten().tolist(), [1, 1], omni.ui.TextureFormat.RGBA8_UNORM)
+
         return material
 
     def find_all_dynamic_materials() -> List[DynamicPrim]:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
         if stage is None:  # Sometimes stage isn't loaded when the frame draws
-            return
+            return []
 
         shaders: List[UsdShade.Shader] = [UsdShade.Shader(x) for x in stage.Traverse() if x.IsA(UsdShade.Shader)]
         dynamic_shaders: List[str] = []
