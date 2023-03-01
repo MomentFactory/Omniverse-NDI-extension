@@ -22,8 +22,9 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
     def on_shutdown(self):
         self._menu = None
-        self._window.destroy()
-        self._window = None
+        if self._window:
+            self._window.destroy()
+            self._window = None
         # ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, None)
 
     def _set_menu(self, visible):
@@ -44,7 +45,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
 
     def show_window(self, menu, value):
         if value:
-            self._window = NDIWindow(width=800, height=240)
+            self._window = NDIWindow(width=800, height=230)
             self._window.set_visibility_changed_fn(self._visibility_changed_fn)
         elif self._window:
             self._window.destroy()
