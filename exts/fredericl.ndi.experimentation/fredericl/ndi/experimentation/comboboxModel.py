@@ -17,7 +17,7 @@ class ComboboxItem(ui.AbstractItem):
 
 class ComboboxModel(ui.AbstractItemModel):
     NONE_VALUE = "NONE"
-    PROXY_VALUE = "PROXY (1080p30)"
+    PROXY_VALUE = "PROXY (1080p30) - RED"
     items: List[ComboboxItem] = []
     watchers = []
 
