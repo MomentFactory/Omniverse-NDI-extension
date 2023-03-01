@@ -8,14 +8,16 @@ import carb
 class NDIWindow(ui.Window):
     WINDOW_NAME = "NDI Dynamic Texture"
 
-    def __init__(self, model: NDIModel, delegate=None, **kwargs):
+    def __init__(self, delegate=None, **kwargs):
         super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
-        self._model: NDIModel = model
-        # self._refresh_materials() Removed because scene not always present when called
+        self._model: NDIModel = NDIModel()
+        self._refresh_materials()
         # self._refresh_ndi() Removed because of long search time
         self.frame.set_build_fn(self._build_fn)
 
     def destroy(self):
+        self._model.on_shutdown()
+        self._model = None
         super().destroy()
 
     def _build_fn(self):
