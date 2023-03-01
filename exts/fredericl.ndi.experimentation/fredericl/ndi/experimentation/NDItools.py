@@ -156,8 +156,8 @@ class NDIVideoStreamProxy(NDIVideoStream):
         self.is_ok = False
         self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
 
-        w = 1080
-        h = 1920
+        w = 1
+        h = 1
         c: List[np.uint8] = [255, 0, 0, 255]
         frame = np.full((h, w, len(c)), c, dtype=np.uint8)
         self._frame = frame
