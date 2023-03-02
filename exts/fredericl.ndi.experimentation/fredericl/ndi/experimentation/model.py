@@ -86,7 +86,7 @@ class NDIModel():
         self.search_for_dynamic_material()
 
     def search_for_dynamic_material(self):
-        result: List[DynamicPrim] = USDtools.find_all_dynamic_materials()
+        result: List[DynamicPrim] = USDtools.find_all_dynamic_sources()
 
         # Add new shader sources as bindings
         for dynamic_prim in result:
