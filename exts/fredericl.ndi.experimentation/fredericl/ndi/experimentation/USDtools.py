@@ -47,18 +47,21 @@ class USDtools():
         dynamic_shaders: List[str] = []
         result: List[DynamicPrim] = []
         for shader in shaders:
-            path: str = shader.GetInput("diffuse_texture").Get().path
-            length: int = len(USDtools.PREFIX)
-            if len(path) > length:
-                candidate = path[:length]
-                if candidate == USDtools.PREFIX:
-                    name = path[length:]
-                    if name not in dynamic_shaders:
-                        dynamic_shaders.append(name)
-                        attr = shader.GetPrim().GetAttribute(USDtools.ATTR_NAME)
-                        attr = attr.Get() if attr.IsValid() else None
-                        p = DynamicPrim(shader.GetPath().pathString, name, attr)
-                        result.append(p)
+            texture_input = shader.GetInput("diffuse_texture")
+            texture_value = texture_input.Get()
+            if texture_value:
+                path: str = texture_value.path
+                length: int = len(USDtools.PREFIX)
+                if len(path) > length:
+                    candidate = path[:length]
+                    if candidate == USDtools.PREFIX:
+                        name = path[length:]
+                        if name not in dynamic_shaders:
+                            dynamic_shaders.append(name)
+                            attr = shader.GetPrim().GetAttribute(USDtools.ATTR_NAME)
+                            attr = attr.Get() if attr.IsValid() else None
+                            p = DynamicPrim(shader.GetPath().pathString, name, attr)
+                            result.append(p)
 
         return result
 
