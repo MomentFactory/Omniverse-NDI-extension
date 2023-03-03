@@ -2,7 +2,7 @@ import omni.ext
 from typing import List
 from pxr import Usd, UsdShade, Sdf, UsdLux
 from dataclasses import dataclass
-import carb
+import logging
 import numpy as np
 
 
@@ -89,7 +89,8 @@ class USDtools():
 
         prim: Usd.Prim = stage.GetPrimAtPath(path)
         if not prim.IsValid():
-            carb.log_error(f"Could not set the ndi attribute of prim at {path}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Could not set the ndi attribute of prim at {path}")
             return
 
         prim.CreateAttribute(USDtools.ATTR_NAME, Sdf.ValueTypeNames.String).Set(value)

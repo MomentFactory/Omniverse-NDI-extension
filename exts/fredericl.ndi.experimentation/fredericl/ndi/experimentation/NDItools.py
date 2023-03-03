@@ -1,7 +1,7 @@
 from .comboboxModel import ComboboxModel
 import NDIlib as ndi
 import carb.profiler
-import carb
+import logging
 import time
 from typing import List
 import omni.ui
@@ -107,7 +107,8 @@ class NDIVideoStream():
                 source = source_candidates[0]
 
         if source is None:
-            print(f"TIMEOUT: Could not find source at \"{stream_uri}\".")
+            logger = logging.getLogger(__name__)
+            logger.error(f"TIMEOUT: Could not find source at \"{stream_uri}\".")
             return
 
         recv_create_desc = ndi.RecvCreateV3()
