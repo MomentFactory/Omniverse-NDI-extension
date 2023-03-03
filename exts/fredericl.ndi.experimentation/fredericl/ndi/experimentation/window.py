@@ -2,7 +2,7 @@ from .model import NDIModel, NDIBinding
 from .comboboxModel import ComboboxModel
 import omni.ui as ui
 import pyperclip
-import carb
+import logging
 
 
 class NDIWindow(ui.Window):
@@ -58,7 +58,8 @@ class NDIWindow(ui.Window):
     def _on_click_create_dynamic_material(self):
         name: str = self._dynamic_name.model.get_value_as_string()
         if name == "":
-            carb.log_warn("Cannot create dynamic material with empty name")
+            logger = logging.getLogger(__name__)
+            logger.warning("Cannot create dynamic material with empty name")
             return
         self._model.create_dynamic_material(name)
         self.refresh_materials_and_rebuild()

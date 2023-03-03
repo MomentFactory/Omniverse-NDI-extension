@@ -2,7 +2,8 @@ from .comboboxModel import ComboboxModel
 from .USDtools import USDtools, DynamicPrim
 from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy
 from typing import List
-import carb
+import logging
+import carb.profiler
 import omni.kit.app
 
 
@@ -46,7 +47,8 @@ class NDIModel():
 # region update loop
     def add_stream(self, name: str, uri: str):
         if uri == ComboboxModel.NONE_VALUE:
-            carb.log_warn("Won't create stream without ndi source")
+            logger = logging.getLogger(__name__)
+            logger.warning("Won't create stream without ndi source")
             return
 
         if uri == ComboboxModel.PROXY_VALUE:
@@ -58,7 +60,8 @@ class NDIModel():
 
     def _add_stream(self, video_stream, uri):
         if not video_stream.is_ok:
-            carb.log_error(f"Error opening stream: {uri}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error opening stream: {uri}")
             return
         self._streams.append(video_stream)
 
@@ -121,12 +124,13 @@ class NDIModel():
 
     def set_binding(self, dynamic_id: str, ndi_source: str):
         binding: NDIBinding = self._get_binding_from_id(dynamic_id)
+        logger = logging.getLogger(__name__)
         if binding is None:
-            carb.log_error(f"No binding found for {dynamic_id}")
+            logger.error(f"No binding found for {dynamic_id}")
         else:
             ndi = self._find_ndidata_from_source(ndi_source)
             if ndi is None:
-                carb.log_error(f"No ndi source found for {ndi_source}")
+                logger.error(f"No ndi source found for {ndi_source}")
             else:
                 binding.set_ndi_id(ndi)
 
