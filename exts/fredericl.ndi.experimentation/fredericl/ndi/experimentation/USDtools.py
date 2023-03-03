@@ -46,12 +46,13 @@ class USDtools():
         shaders: List[UsdShade.Shader] = [UsdShade.Shader(x) for x in stage.Traverse() if x.IsA(UsdShade.Shader)]
         dynamic_shaders: List[str] = []
         result: List[DynamicPrim] = []
+
+        length: int = len(USDtools.PREFIX)
         for shader in shaders:
             texture_input = shader.GetInput("diffuse_texture")
             texture_value = texture_input.Get()
             if texture_value:
                 path: str = texture_value.path
-                length: int = len(USDtools.PREFIX)
                 if len(path) > length:
                     candidate = path[:length]
                     if candidate == USDtools.PREFIX:
