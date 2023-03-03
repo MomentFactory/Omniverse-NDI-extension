@@ -1,6 +1,6 @@
 import omni.ext
 from typing import List
-from pxr import Usd, UsdShade, Sdf
+from pxr import Usd, UsdShade, Sdf, UsdLux
 from dataclasses import dataclass
 import carb
 import numpy as np
@@ -37,7 +37,7 @@ class USDtools():
 
         return material
 
-    def find_all_dynamic_materials() -> List[DynamicPrim]:
+    def find_all_dynamic_sources() -> List[DynamicPrim]:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
         if stage is None:  # Sometimes stage isn't loaded when the frame draws
@@ -46,12 +46,13 @@ class USDtools():
         shaders: List[UsdShade.Shader] = [UsdShade.Shader(x) for x in stage.Traverse() if x.IsA(UsdShade.Shader)]
         dynamic_shaders: List[str] = []
         result: List[DynamicPrim] = []
+
+        length: int = len(USDtools.PREFIX)
         for shader in shaders:
             texture_input = shader.GetInput("diffuse_texture")
             texture_value = texture_input.Get()
             if texture_value:
                 path: str = texture_value.path
-                length: int = len(USDtools.PREFIX)
                 if len(path) > length:
                     candidate = path[:length]
                     if candidate == USDtools.PREFIX:
@@ -61,6 +62,23 @@ class USDtools():
                             attr = shader.GetPrim().GetAttribute(USDtools.ATTR_NAME)
                             attr = attr.Get() if attr.IsValid() else None
                             p = DynamicPrim(shader.GetPath().pathString, name, attr)
+                            result.append(p)
+
+        rect_lights: List[UsdLux.Rectlight] = [UsdLux.RectLight(x) for x in stage.Traverse() if x.IsA(UsdLux.RectLight)]
+        for rect_light in rect_lights:
+            # TODO: Filter those that have "isProjector" (the attribute doesn't exist)
+            attribute = rect_light.GetPrim().GetAttribute("texture:file").Get()
+            if attribute:
+                path: str = attribute.path
+                if len(path) > length:
+                    candidate = path[:length]
+                    if candidate == USDtools.PREFIX:
+                        name = path[length:]
+                        if name not in dynamic_shaders:
+                            dynamic_shaders.append(name)
+                            attr = rect_light.GetPrim().GetAttribute(USDtools.ATTR_NAME)
+                            attr = attr.Get() if attr.IsValid() else None
+                            p = DynamicPrim(rect_light.GetPath().pathString, name, attr)
                             result.append(p)
 
         return result

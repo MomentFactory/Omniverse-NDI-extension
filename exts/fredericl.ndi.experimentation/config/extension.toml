@@ -24,7 +24,6 @@ name = "fredericl.ndi.experimentation"
 
 [python.pipapi]
 requirements = [
-    "opencv-python",
     "ndi-python"
 ]
 use_online_index = true
