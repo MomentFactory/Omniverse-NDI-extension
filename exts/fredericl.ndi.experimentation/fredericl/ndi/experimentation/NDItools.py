@@ -82,7 +82,7 @@ class NDItools():
 
 
 class NDIVideoStream():
-    def __init__(self, name: str, stream_uri: str):
+    def __init__(self, name: str, stream_uri: str, lowbandwidth: bool):
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
@@ -111,8 +111,10 @@ class NDIVideoStream():
             logger.error(f"TIMEOUT: Could not find source at \"{stream_uri}\".")
             return
 
-        recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        if lowbandwidth:
+            recv_create_desc = self.get_recv_low_bandwidth()
+        else:
+            recv_create_desc = self.get_recv_high_bandwidth()
 
         self._ndi_recv = ndi.recv_create_v3(recv_create_desc)
         if self._ndi_recv is None:
@@ -124,6 +126,18 @@ class NDIVideoStream():
         self.fps = 120
         self._last_read = time.time()
         self.is_ok = True
+
+    def get_recv_high_bandwidth(self):
+        recv_create_desc = ndi.RecvCreateV3()
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        # defaults to BANDWIDTH_HIGHEST
+        return recv_create_desc
+
+    def get_recv_low_bandwidth(self):
+        recv_create_desc = ndi.RecvCreateV3()
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_LOWEST
+        return recv_create_desc
 
     def destroy(self):
         super.destroy()
@@ -151,21 +165,25 @@ class NDIVideoStream():
 
 
 class NDIVideoStreamProxy(NDIVideoStream):
-    def __init__(self, name: str, stream_uri: str):
+    def __init__(self, name: str, stream_uri: str, fps: float, lowbandwidth: bool):
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
         self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
 
-        w = 1920
-        h = 1080
+        denominator = 1
+        if lowbandwidth:
+            denominator = 3
+
+        w = int(1920 / denominator)
+        h = int(1080 / denominator)
         c = np.array([255, 0, 0, 255], np.uint8)
         frame = np.full((h, w, len(c)), c, dtype=np.uint8)
-        self._frame = frame
+        self._frame = frame.flatten().tolist()
         self._width = w
         self._height = h
 
-        self.fps = 30
+        self.fps = fps
         self._last_read = time.time()
         self.is_ok = True
 
@@ -180,5 +198,5 @@ class NDIVideoStreamProxy(NDIVideoStream):
             return
         self._last_read = now
 
-        self._dynamic_texture.set_bytes_data(self._frame.flatten().tolist(), [self._width, self._height],
+        self._dynamic_texture.set_bytes_data(self._frame, [self._width, self._height],
                                              omni.ui.TextureFormat.RGBA8_UNORM)

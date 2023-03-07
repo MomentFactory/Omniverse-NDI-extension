@@ -11,10 +11,12 @@ class DynamicPrim:
     path: str
     name: str
     ndi: str
+    low: bool
 
 
 class USDtools():
-    ATTR_NAME = 'ndi:source'
+    ATTR_NDI_NAME = 'ndi:source'
+    ATTR_BANDWIDTH_NAME = "ndi:lowbandwidth"
     PREFIX = "dynamic://"
 
     def create_dynamic_material(name: str) -> UsdShade.Material:
@@ -59,9 +61,11 @@ class USDtools():
                         name = path[length:]
                         if name not in dynamic_shaders:
                             dynamic_shaders.append(name)
-                            attr = shader.GetPrim().GetAttribute(USDtools.ATTR_NAME)
-                            attr = attr.Get() if attr.IsValid() else None
-                            p = DynamicPrim(shader.GetPath().pathString, name, attr)
+                            attr_ndi = shader.GetPrim().GetAttribute(USDtools.ATTR_NDI_NAME)
+                            attr_ndi = attr_ndi.Get() if attr_ndi.IsValid() else None
+                            attr_low = shader.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
+                            attr_low = attr_low.Get() if attr_low.IsValid() else False
+                            p = DynamicPrim(shader.GetPath().pathString, name, attr_ndi, attr_low)
                             result.append(p)
 
         rect_lights: List[UsdLux.Rectlight] = [UsdLux.RectLight(x) for x in stage.Traverse() if x.IsA(UsdLux.RectLight)]
@@ -75,10 +79,11 @@ class USDtools():
                     if candidate == USDtools.PREFIX:
                         name = path[length:]
                         if name not in dynamic_shaders:
-                            dynamic_shaders.append(name)
-                            attr = rect_light.GetPrim().GetAttribute(USDtools.ATTR_NAME)
-                            attr = attr.Get() if attr.IsValid() else None
-                            p = DynamicPrim(rect_light.GetPath().pathString, name, attr)
+                            attr_ndi = shader.GetPrim().GetAttribute(USDtools.ATTR_NDI_NAME)
+                            attr_ndi = attr_ndi.Get() if attr_ndi.IsValid() else None
+                            attr_low = shader.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
+                            attr_low = attr_low.Get() if attr_low.IsValid() else False
+                            p = DynamicPrim(rect_light.GetPath().pathString, name, attr_ndi, attr_low)
                             result.append(p)
 
         return result
@@ -93,4 +98,15 @@ class USDtools():
             logger.error(f"Could not set the ndi attribute of prim at {path}")
             return
 
-        prim.CreateAttribute(USDtools.ATTR_NAME, Sdf.ValueTypeNames.String).Set(value)
+        prim.CreateAttribute(USDtools.ATTR_NDI_NAME, Sdf.ValueTypeNames.String).Set(value)
+
+    def set_prim_bandwidth_attribute(path: str, value: bool):
+        usd_context = omni.usd.get_context()
+        stage: Usd.Stage = usd_context.get_stage()
+
+        prim: Usd.Prim = stage.GetPrimAtPath(path)
+        if not prim.IsValid():
+            logger = logging.getLogger(__name__)
+            logger.error(f"Could not set the bandwidth attribute of prim at {path}")
+
+        prim.CreateAttribute(USDtools.ATTR_BANDWIDTH_NAME, Sdf.ValueTypeNames.Bool).Set(value)

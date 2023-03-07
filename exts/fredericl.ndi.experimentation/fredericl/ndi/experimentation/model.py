@@ -5,13 +5,15 @@ from typing import List
 import logging
 import carb.profiler
 import omni.kit.app
+import re
 
 
 class NDIBinding():
-    def __init__(self, dynamic_id: str, ndi: NDIData, path: str):
+    def __init__(self, dynamic_id: str, ndi: NDIData, path: str, lowbandwidth: bool):
         self._dynamic_id = dynamic_id
         self._ndi = ndi
         self._path = path
+        self._lowbandwidth = lowbandwidth
 
     def get_id(self) -> str:
         return self._dynamic_id
@@ -25,6 +27,13 @@ class NDIBinding():
     def set_ndi_id(self, ndi: NDIData):
         self._ndi = ndi
         USDtools.set_prim_ndi_attribute(self._path, self._ndi.get_source())
+
+    def set_lowbandwidth(self, value: bool):
+        self._lowbandwidth = value
+        USDtools.set_prim_bandwidth_attribute(self._path, self._lowbandwidth)
+
+    def get_lowbandwidth(self) -> bool:
+        return self._lowbandwidth
 
     def register_status_fn(self, fn):
         self._ndi.set_active_value_changed_fn(fn)
@@ -45,17 +54,18 @@ class NDIModel():
         # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
 # region update loop
-    def add_stream(self, name: str, uri: str):
+    def add_stream(self, name: str, uri: str, lowbandwidth: bool):
         if uri == ComboboxModel.NONE_VALUE:
             logger = logging.getLogger(__name__)
             logger.warning("Won't create stream without ndi source")
             return
 
         if uri == ComboboxModel.PROXY_VALUE:
-            video_stream = NDIVideoStreamProxy(name, uri)
+            fps = float(re.search("\((.*)\)", uri).group(1).split("p")[1])
+            video_stream = NDIVideoStreamProxy(name, uri, fps, lowbandwidth)
             self._add_stream(video_stream, uri)
         else:
-            video_stream = NDIVideoStream(name, uri)
+            video_stream = NDIVideoStream(name, uri, lowbandwidth)
             self._add_stream(video_stream, uri)
 
     def _add_stream(self, video_stream, uri):
@@ -96,9 +106,10 @@ class NDIModel():
             dynamic_id = dynamic_prim.name
             ndi_source = dynamic_prim.ndi
             binding = self._get_binding_from_id(dynamic_id)
+            lowbandwidth = dynamic_prim.low
             if binding is None:
                 source = NDIData(ndi_source, False) if ndi_source is not None else NDItools.NONE_DATA
-                binding = NDIBinding(dynamic_id, source, dynamic_prim.path)
+                binding = NDIBinding(dynamic_id, source, dynamic_prim.path, lowbandwidth)
                 self._bindings.append(binding)
 
         # Remove unresolved bindings
