@@ -40,10 +40,11 @@ class NDIWindow(ui.Window):
                       style=button_style, clicked_fn=self._on_click_refresh_ndi)
             ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
-            ui.Button("Stop all streams", clicked_fn=self._model.kill_all_streams)
+            ui.Button("Stop all streams", clicked_fn=self._kill_all_streams)
 
     def _ui_section_bindings(self):
         ComboboxModel.ResetWatchers()
+        self._bindingPanels = []
         with ui.ScrollingFrame():
             with ui.VStack():
                 bindings: NDIBinding = self._model.get_bindings()
@@ -51,7 +52,7 @@ class NDIWindow(ui.Window):
                     ui.Label("No dynamic materials found")
                 else:
                     for binding in bindings:
-                        NDIBindingPanel(binding, self._model, self, height=0)
+                        self._bindingPanels.append(NDIBindingPanel(binding, self._model, self, height=0))
 # endregion
 
 # region controls
@@ -80,6 +81,12 @@ class NDIWindow(ui.Window):
 
     def _refresh_ndi(self):
         self._model.search_for_ndi_feeds()
+
+    def _kill_all_streams(self):
+        self._model.kill_all_streams()
+        for panel in self._bindingPanels:
+            panel.enable_lowbandwidth_checkbox()
+
 # endregion
 
 
@@ -99,6 +106,10 @@ class NDIBindingPanel(ui.CollapsableFrame):
                     with ui.HStack():
                         ui.Button("C", width=30, clicked_fn=self._on_click_copy)
                         ui.Label(name)
+                        ui.Label("low bandwidth", width=100)
+                        self.lowbandwidth = ui.CheckBox(width=30)
+                        self.lowbandwidth.model.add_value_changed_fn(self._set_low_bandwidth_value)
+                        self.lowbandwidth.model.set_value(self._binding.get_lowbandwidth())
                     with ui.HStack():
                         self._status_label_inactive = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
                         self._status_label_active = ui.Image(NDIBindingPanel.NDI_ACTIVE, width=30)
@@ -109,6 +120,12 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
                         ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
 
+    def enable_lowbandwidth_checkbox(self):
+        self.lowbandwidth.enabled = True
+
+    def _set_low_bandwidth_value(self, model):
+        self._binding.set_lowbandwidth(model.get_value_as_bool())
+
     def _on_click_copy(self):
         pyperclip.copy(self._binding.get_id_full())
 
@@ -117,9 +134,12 @@ class NDIBindingPanel(ui.CollapsableFrame):
         self.collapsed = True
 
     def _on_click_play_ndi(self):
-        self._model.add_stream(self._binding.get_id(), self._binding.get_source())
+        lowbandwidth = self.lowbandwidth.model.get_value_as_bool()
+        self.lowbandwidth.enabled = False
+        self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth)
 
     def _on_click_pause_ndi(self):
+        self.lowbandwidth.enabled = True
         self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
 
     def _on_ndi_status_change(self):
