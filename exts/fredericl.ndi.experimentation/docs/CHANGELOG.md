@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.5.0] - 2023-03-07
+
+### Added
+- Support for receiving the low bandwidth version of a NDI stream (this is a feature of NDI that we now support)
+
 ## [0.4.0] - 2023-03-03
 
 ### Added
