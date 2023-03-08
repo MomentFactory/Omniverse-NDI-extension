@@ -34,8 +34,10 @@ class USDtools():
 
         magenta = np.array([255, 0, 255, 255], np.uint8)
         frame = np.full((1, 1, 4), magenta, dtype=np.uint8)
+        height, width, channels = frame.shape
         dynamic_texture = omni.ui.DynamicTextureProvider(name)
-        dynamic_texture.set_bytes_data(frame.flatten().tolist(), [1, 1], omni.ui.TextureFormat.RGBA8_UNORM)
+        dynamic_texture.set_data_array(frame, [width, height, channels])
+        # dynamic_texture.set_bytes_data(frame.flatten().tolist(), [1, 1], omni.ui.TextureFormat.RGBA8_UNORM)
 
         return material
 
