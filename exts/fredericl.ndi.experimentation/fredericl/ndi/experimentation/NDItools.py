@@ -123,7 +123,7 @@ class NDIVideoStream():
         ndi.recv_connect(self._ndi_recv, source)
         ndi.find_destroy(ndi_find)
 
-        self.fps = 120
+        self.fps = 120  # high value so we can fetch the real value when we receive the first video frame
         self._last_read = time.time()
         self.is_ok = True
 
@@ -158,9 +158,8 @@ class NDIVideoStream():
             self.fps = v.frame_rate_N / v.frame_rate_D
             # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
             frame = v.data
-            height, width, _ = frame.shape
-            self._dynamic_texture.set_bytes_data(frame.flatten().tolist(), [width, height],
-                                                 omni.ui.TextureFormat.BGRA8_UNORM)
+            height, width, channels = frame.shape
+            self._dynamic_texture.set_data_array(frame, [width, height, channels])
             ndi.recv_free_video_v2(self._ndi_recv, v)
 
 
@@ -179,9 +178,7 @@ class NDIVideoStreamProxy(NDIVideoStream):
         h = int(1080 / denominator)
         c = np.array([255, 0, 0, 255], np.uint8)
         frame = np.full((h, w, len(c)), c, dtype=np.uint8)
-        self._frame = frame.flatten().tolist()
-        self._width = w
-        self._height = h
+        self._frame = frame
 
         self.fps = fps
         self._last_read = time.time()
@@ -198,5 +195,5 @@ class NDIVideoStreamProxy(NDIVideoStream):
             return
         self._last_read = now
 
-        self._dynamic_texture.set_bytes_data(self._frame, [self._width, self._height],
-                                             omni.ui.TextureFormat.RGBA8_UNORM)
+        height, width, channels = self._frame.shape
+        self._dynamic_texture.set_data_array(self._frame, [width, height, channels])
