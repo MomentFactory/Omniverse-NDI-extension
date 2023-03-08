@@ -158,6 +158,7 @@ class NDIVideoStream():
             self.fps = v.frame_rate_N / v.frame_rate_D
             # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
             frame = v.data
+            frame[..., :3] = frame[..., 2::-1]  # BGRA to RGBA
             height, width, channels = frame.shape
             self._dynamic_texture.set_data_array(frame, [width, height, channels])
             ndi.recv_free_video_v2(self._ndi_recv, v)
