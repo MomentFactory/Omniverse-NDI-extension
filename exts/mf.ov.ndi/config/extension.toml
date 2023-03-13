@@ -18,9 +18,8 @@ icon = "data/icon.png"
 [dependencies]
 "omni.kit.uiapp" = {}
 
-
 [[python.module]]
-name = "fredericl.ndi.experimentation"
+name = "mf.ov.ndi"
 
 [python.pipapi]
 requirements = [

@@ -6,7 +6,7 @@ import logging
 
 
 class NDIWindow(ui.Window):
-    WINDOW_NAME = "NDI Dynamic Texture"
+    WINDOW_NAME = "Omniverse NDI®"
 
     def __init__(self, delegate=None, **kwargs):
         super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
