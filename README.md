@@ -10,13 +10,13 @@ Experimenting with ndi feed in Omniverse.
 
 ```
 $ ./link_app.bat --app create
-$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable fredericl.ndi.experimentation
+$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable mf.ov.ndi
 ```
 
 Or open [example.usda](./example.usda) in Create.
 
 ## Extension window
-![preview](./exts/fredericl.ndi.experimentation/data/preview.png)
+![preview](./exts/mf.ov.ndi/data/preview.png)
 
 ### Header
 - Text field: (“myDynamicMaterial”) the identifier for the material to create

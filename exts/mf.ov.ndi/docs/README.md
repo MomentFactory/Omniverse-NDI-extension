@@ -1,4 +1,3 @@
-# Python Extension Example [fredericl.ndi.experimentation]
+# Omniverse NDI® extension [mf.ov.ndi]
 
-Display ndi feed in Omniverse with the use of dynamic textures
-
+Bring live video feeds as dynamic textures in your stages.
