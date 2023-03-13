@@ -3,8 +3,6 @@ from .USDtools import USDtools, DynamicPrim
 from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy
 from typing import List
 import logging
-import carb.profiler
-import omni.kit.app
 import re
 
 
@@ -48,8 +46,8 @@ class NDIModel():
         self._ndi_feeds: List[NDIData] = []
         self._reset_ndi_feeds()
 
-        stream = omni.kit.app.get_app().get_update_event_stream()
-        self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
+        # stream = omni.kit.app.get_app().get_update_event_stream()
+        # self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
         self._streams: List[NDIVideoStream] = []
         # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
@@ -73,24 +71,23 @@ class NDIModel():
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {uri}")
             return
+
         self._streams.append(video_stream)
 
     def kill_all_streams(self):
+        for stream in self._streams:
+            stream.destroy()
         self._streams = []
 
     def remove_stream(self, name: str, uri: str):
         stream: NDIVideoStream = next((x for x in self._streams if x.name == name and x.uri == uri), None)
         if stream is not None:  # could be none if already stopped
             self._streams.remove(stream)
-
-    @carb.profiler.profile
-    def _on_update(self, e):
-        for stream in self._streams:
-            stream.update()
+            stream.destroy()
 
     def on_shutdown(self):
-        self._sub.unsubscribe()
-        self._streams = []
+        # self._sub.unsubscribe()
+        self.kill_all_streams()
 # endregion
 
 # region dynamic
