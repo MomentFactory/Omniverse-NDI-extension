@@ -2,7 +2,7 @@
 version = "0.5.0"
 
 title = "Omniverse NDI® extension"
-description = "The NDI® Omniverse extension allows you to use live video feeds as textures in your stages."
+description = "Bring live video feeds as dynamic textures in your stages."
 authors = ["Moment Factory","Frederic Lestage"]
 
 readme  = "docs/README.md"
@@ -20,7 +20,7 @@ icon = "data/icon.png"
 
 
 [[python.module]]
-name = "mf.ov.ndi"
+name = "fredericl.ndi.experimentation"
 
 [python.pipapi]
 requirements = [
