@@ -60,6 +60,14 @@ class NDIModel():
             self._apply_ndi_feeds(self._ndi_source_update)
             self._ndi_source_update = []
 
+        for stream in self._streams:
+            to_remove = []
+            if not stream._is_running:
+                to_remove.append(stream)
+            for r in to_remove:
+                self._streams.remove(stream)
+                stream.destroy()
+
     def _on_ndi_source_changed(self, sources: List[str]):
         self._ndi_source_update = sources.copy()
 

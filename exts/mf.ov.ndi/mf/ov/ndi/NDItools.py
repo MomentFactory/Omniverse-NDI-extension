@@ -123,6 +123,8 @@ class NDIVideoStream():
         self.fps = 120  # high value so we can fetch the real value when we receive the first video frame
         self._last_read = time.time()
 
+        self._no_frame_chances = 5
+
         self._is_running = True
         self._thread = threading.Thread(target=self._update_texture)
         self._thread.daemon = True
@@ -158,7 +160,7 @@ class NDIVideoStream():
                 continue
             self._last_read = now
 
-            t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)
+            t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 1000)
 
             if t == ndi.FRAME_TYPE_VIDEO:
                 self.fps = v.frame_rate_N / v.frame_rate_D
@@ -168,6 +170,13 @@ class NDIVideoStream():
                 height, width, channels = frame.shape
                 self._dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
+
+            if t == ndi.FRAME_TYPE_NONE:
+                self._no_frame_chances -= 1
+                if (self._no_frame_chances <= 0):
+                    self._is_running = False
+            else:
+                self._no_frame_chances = 5
 
 
 class NDIVideoStreamProxy(NDIVideoStream):
