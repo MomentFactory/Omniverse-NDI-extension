@@ -56,10 +56,18 @@ class NDIModel():
         # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
     def _on_update(self, e):
+        self._check_for_ndi_source_change()
+        self._check_for_stream_not_running()
+
+    def _on_ndi_source_changed(self, sources: List[str]):
+        self._ndi_source_update = sources.copy()
+
+    def _check_for_ndi_source_change(self):
         if len(self._ndi_source_update) > 0:
             self._apply_ndi_feeds(self._ndi_source_update)
             self._ndi_source_update = []
 
+    def _check_for_stream_not_running(self):
         for stream in self._streams:
             to_remove = []
             if not stream._is_running:
@@ -67,9 +75,6 @@ class NDIModel():
             for r in to_remove:
                 self._streams.remove(stream)
                 stream.destroy()
-
-    def _on_ndi_source_changed(self, sources: List[str]):
-        self._ndi_source_update = sources.copy()
 
     def on_shutdown(self):
         if self._ndi_finder:
