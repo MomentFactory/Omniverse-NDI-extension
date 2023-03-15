@@ -39,7 +39,7 @@ class NDIfinder():
 
         self._is_running = True
         self._thread = threading.Thread(target=self._search)
-        self._thread.setDaemon(True)
+        self._thread.daemon = True
         self._thread.start()
 
     def _search(self):
