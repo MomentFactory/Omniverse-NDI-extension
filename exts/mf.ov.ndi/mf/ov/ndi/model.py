@@ -68,13 +68,13 @@ class NDIModel():
             self._ndi_source_update = []
 
     def _check_for_stream_not_running(self):
+        to_remove = []
         for stream in self._streams:
-            to_remove = []
             if not stream._is_running:
                 to_remove.append(stream)
-            for r in to_remove:
-                self._streams.remove(stream)
-                stream.destroy()
+        for r in to_remove:
+            self._streams.remove(r)
+            r.destroy()
 
     def on_shutdown(self):
         if self._ndi_finder:
