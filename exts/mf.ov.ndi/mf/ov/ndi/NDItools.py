@@ -46,12 +46,15 @@ class NDIfinder():
         logger = logging.getLogger(__name__)
 
         if not ndi.initialize():
+            self._is_running = False
             logger.error("Could not initialize ndi")
             return
 
         ndi_find = ndi.find_create_v2()
         if ndi_find is None:
+            self._is_running = False
             logger.error("Could not initialize ndi find")
+            ndi.destroy()
             return
 
         while self._is_running:
