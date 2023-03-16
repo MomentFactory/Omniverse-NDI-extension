@@ -1,9 +1,10 @@
 from .comboboxModel import ComboboxModel
 from .USDtools import USDtools, DynamicPrim
-from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy
+from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy, NDIfinder
 from typing import List
 import logging
 import re
+import omni
 
 
 class NDIBinding():
@@ -46,12 +47,29 @@ class NDIModel():
         self._ndi_feeds: List[NDIData] = []
         self._reset_ndi_feeds()
 
-        # stream = omni.kit.app.get_app().get_update_event_stream()
-        # self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
+        self._ndi_source_update: List[str] = []
+        stream = omni.kit.app.get_app().get_update_event_stream()
+        self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
+
         self._streams: List[NDIVideoStream] = []
+        self._ndi_finder: NDIfinder = NDIfinder(self._on_ndi_source_changed)
         # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
-# region update loop
+    def _on_update(self, e):
+        if len(self._ndi_source_update) > 0:
+            self._apply_ndi_feeds(self._ndi_source_update)
+            self._ndi_source_update = []
+
+    def _on_ndi_source_changed(self, sources: List[str]):
+        self._ndi_source_update = sources.copy()
+
+    def on_shutdown(self):
+        if self._ndi_finder:
+            self._ndi_finder.destroy()
+        self._sub.unsubscribe()
+        self.kill_all_streams()
+
+# region streams
     def add_stream(self, name: str, uri: str, lowbandwidth: bool):
         if uri == ComboboxModel.NONE_VALUE:
             logger = logging.getLogger(__name__)
@@ -84,10 +102,6 @@ class NDIModel():
         if stream is not None:  # could be none if already stopped
             self._streams.remove(stream)
             stream.destroy()
-
-    def on_shutdown(self):
-        # self._sub.unsubscribe()
-        self.kill_all_streams()
 # endregion
 
 # region dynamic
@@ -167,21 +181,23 @@ class NDIModel():
         self._add_bindings_to_feeds()
         self._push_ndi_to_combobox()
 
-    def search_for_ndi_feeds(self):
+    def _apply_ndi_feeds(self, others: List[str]):
         self._reset_ndi_feeds()
         self._add_bindings_to_feeds()
 
-        others = NDItools.find_ndi_sources_long()
         for other in others:
             found: NDIData = self._find_ndidata_from_source(other)
             if found is None:
                 self._ndi_feeds.append(NDIData(other, True))
             else:
                 found.set_active()
-
-        # TODO: Make inactive if in self._ndi_feeds but not in others
+            # TODO: Make inactive if in self._ndi_feeds but not in others
 
         self._push_ndi_to_combobox()
+
+    # def force_search_for_ndi_feeds(self):
+    #    if self._ndi_finder:
+    #        self._ndi_finder.force_search()
 
     def _reset_ndi_feeds(self):
         self._ndi_feeds = [NDItools.NONE_DATA, NDItools.PROXY_DATA]

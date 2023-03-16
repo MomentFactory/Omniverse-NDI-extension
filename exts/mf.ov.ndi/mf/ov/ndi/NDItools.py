@@ -30,56 +30,51 @@ class NDIData():
         self._on_value_changed_fn = fn
 
 
+class NDIfinder():
+    SLEEP_INTERVAL: float = 2  # seconds
+
+    def __init__(self, on_sources_changed):
+        self._on_sources_changed = on_sources_changed
+        self._previous_sources: List[str] = []
+
+        self._is_running = True
+        self._thread = threading.Thread(target=self._search)
+        self._thread.setDaemon(True)
+        self._thread.start()
+
+    def _search(self):
+        logger = logging.getLogger(__name__)
+
+        if not ndi.initialize():
+            logger.error("Could not initialize ndi")
+            return
+
+        ndi_find = ndi.find_create_v2()
+        if ndi_find is None:
+            logger.error("Could not initialize ndi find")
+            return
+
+        while self._is_running:
+            sources = ndi.find_get_current_sources(ndi_find)
+            result = [s.ndi_name for s in sources]
+            delta = set(result) ^ set(self._previous_sources)
+            if len(delta) > 0:
+                self._previous_sources = result
+                self._on_sources_changed(result)
+            time.sleep(NDIfinder.SLEEP_INTERVAL)
+
+        ndi.find_destroy(ndi_find)
+        ndi.destroy()
+
+    def destroy(self):
+        self._is_running = False
+        self._thread.join()
+        self._thread = None
+
+
 class NDItools():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE)
     PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
-
-    def find_ndi_sources() -> List[str]:
-        if not ndi.initialize():
-            return []
-
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            return []
-
-        if not ndi.find_wait_for_sources(ndi_find, 5000):
-            return []
-        sources = ndi.find_get_current_sources(ndi_find)
-
-        result = [s.ndi_name for s in sources]
-
-        ndi.find_destroy(ndi_find)
-        ndi.destroy()
-        return result
-
-    def find_ndi_sources_long(seconds: int = 10) -> List[str]:
-        if not ndi.initialize():
-            return []
-
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            return []
-
-        timeout = time.time() + 10
-        changed = True
-        while changed and time.time() < timeout:
-            if not ndi.find_wait_for_sources(ndi_find, 5000):
-                # print("No change to the sources found.")
-                changed = False
-                continue
-            sources = ndi.find_get_current_sources(ndi_find)
-            # print("Network sources (%s found)." % len(sources))
-            # for i, s in enumerate(sources):
-            #    print('%s. %s' % (i + 1, s.ndi_name))
-
-        result = [s.ndi_name for s in sources]
-
-        ndi.find_destroy(ndi_find)
-        ndi.destroy()
-        return result
-
-    def get_name_from_ndi_name(ndi_name):
-        return ndi_name.split("(")[0].strip()
 
 
 class NDIVideoStream():
