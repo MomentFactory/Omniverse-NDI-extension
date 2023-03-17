@@ -6,17 +6,16 @@ Experimenting with ndi feed in Omniverse.
 
 - Requires Kit >= 104.1
 - Tested in Create 2022.3.3
-- Not working in Code
 
 ```
 $ ./link_app.bat --app create
-$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable fredericl.ndi.experimentation
+$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable mf.ov.ndi
 ```
 
 Or open [example.usda](./example.usda) in Create.
 
 ## Extension window
-![preview](./exts/fredericl.ndi.experimentation/data/preview.png)
+![preview](./exts/mf.ov.ndi/data/preview.png)
 
 ### Header
 - Text field: (“myDynamicMaterial”) the identifier for the material to create

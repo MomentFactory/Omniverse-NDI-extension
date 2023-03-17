@@ -6,13 +6,12 @@ import logging
 
 
 class NDIWindow(ui.Window):
-    WINDOW_NAME = "NDI Dynamic Texture"
+    WINDOW_NAME = "Omniverse NDI®"
 
     def __init__(self, delegate=None, **kwargs):
         super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
         self._model: NDIModel = NDIModel()
         self._refresh_materials()
-        # self._refresh_ndi() Removed because of long search time
         self.frame.set_build_fn(self._build_fn)
 
     def destroy(self):
@@ -36,8 +35,8 @@ class NDIWindow(ui.Window):
             ui.Button("Create Dynamic Material", image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
         with ui.HStack(height=0):
-            ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
-                      style=button_style, clicked_fn=self._on_click_refresh_ndi)
+            # ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+            #          style=button_style, clicked_fn=self._on_click_refresh_ndi)
             ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
             ui.Button("Stop all streams", clicked_fn=self._kill_all_streams)
@@ -65,8 +64,8 @@ class NDIWindow(ui.Window):
         self._model.create_dynamic_material(name)
         self.refresh_materials_and_rebuild()
 
-    def _on_click_refresh_ndi(self):
-        self._refresh_ndi()
+    # def _on_click_refresh_ndi(self):
+    #    self._refresh_ndi()
 
     def _on_click_refresh_materials(self):
         self.refresh_materials_and_rebuild()
@@ -79,8 +78,8 @@ class NDIWindow(ui.Window):
     def _refresh_materials(self):
         self._model.search_for_dynamic_material()
 
-    def _refresh_ndi(self):
-        self._model.search_for_ndi_feeds()
+    # def _refresh_ndi(self):
+    #    self._model.force_search_for_ndi_feeds()
 
     def _kill_all_streams(self):
         self._model.kill_all_streams()

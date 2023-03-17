@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.6.0] - 2023-03-16
+
+## Changed
+- Stream Optimization (no need to flatten the ndi frame)
+- Individual streams now run in different thread
+- Removed refresh ndi feed button in favor of a watcher that runs on a second thread
+
+## Fixed
+- Extension is now know as mf.ov.ndi
+- Omniverse app won't crash when the ndi source is closed and a stream is still running
+    - The app will still freeze for a few seconds
+
 ## [0.5.0] - 2023-03-07
 
 ### Added

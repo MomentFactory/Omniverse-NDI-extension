@@ -1,5 +1,5 @@
 [package]
-version = "0.5.0"
+version = "0.6.0"
 
 title = "Omniverse NDI® extension"
 description = "Bring live video feeds as dynamic textures in your stages."
@@ -18,9 +18,8 @@ icon = "data/icon.png"
 [dependencies]
 "omni.kit.uiapp" = {}
 
-
 [[python.module]]
-name = "fredericl.ndi.experimentation"
+name = "mf.ov.ndi"
 
 [python.pipapi]
 requirements = [

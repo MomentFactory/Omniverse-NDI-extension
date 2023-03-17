@@ -6,6 +6,7 @@ import time
 from typing import List
 import omni.ui
 import numpy as np
+import threading
 
 
 class NDIData():
@@ -29,56 +30,54 @@ class NDIData():
         self._on_value_changed_fn = fn
 
 
+class NDIfinder():
+    SLEEP_INTERVAL: float = 2  # seconds
+
+    def __init__(self, on_sources_changed):
+        self._on_sources_changed = on_sources_changed
+        self._previous_sources: List[str] = []
+
+        self._is_running = True
+        self._thread = threading.Thread(target=self._search)
+        self._thread.daemon = True
+        self._thread.start()
+
+    def _search(self):
+        logger = logging.getLogger(__name__)
+
+        if not ndi.initialize():
+            self._is_running = False
+            logger.error("Could not initialize ndi")
+            return
+
+        ndi_find = ndi.find_create_v2()
+        if ndi_find is None:
+            self._is_running = False
+            logger.error("Could not initialize ndi find")
+            ndi.destroy()
+            return
+
+        while self._is_running:
+            sources = ndi.find_get_current_sources(ndi_find)
+            result = [s.ndi_name for s in sources]
+            delta = set(result) ^ set(self._previous_sources)
+            if len(delta) > 0:
+                self._previous_sources = result
+                self._on_sources_changed(result)
+            time.sleep(NDIfinder.SLEEP_INTERVAL)
+
+        ndi.find_destroy(ndi_find)
+        ndi.destroy()
+
+    def destroy(self):
+        self._is_running = False
+        self._thread.join()
+        self._thread = None
+
+
 class NDItools():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE)
     PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
-
-    def find_ndi_sources() -> List[str]:
-        if not ndi.initialize():
-            return []
-
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            return []
-
-        if not ndi.find_wait_for_sources(ndi_find, 5000):
-            return []
-        sources = ndi.find_get_current_sources(ndi_find)
-
-        result = [s.ndi_name for s in sources]
-
-        ndi.find_destroy(ndi_find)
-        ndi.destroy()
-        return result
-
-    def find_ndi_sources_long(seconds: int = 10) -> List[str]:
-        if not ndi.initialize():
-            return []
-
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            return []
-
-        timeout = time.time() + 10
-        changed = True
-        while changed and time.time() < timeout:
-            if not ndi.find_wait_for_sources(ndi_find, 5000):
-                # print("No change to the sources found.")
-                changed = False
-                continue
-            sources = ndi.find_get_current_sources(ndi_find)
-            # print("Network sources (%s found)." % len(sources))
-            # for i, s in enumerate(sources):
-            #    print('%s. %s' % (i + 1, s.ndi_name))
-
-        result = [s.ndi_name for s in sources]
-
-        ndi.find_destroy(ndi_find)
-        ndi.destroy()
-        return result
-
-    def get_name_from_ndi_name(ndi_name):
-        return ndi_name.split("(")[0].strip()
 
 
 class NDIVideoStream():
@@ -87,6 +86,7 @@ class NDIVideoStream():
         self.uri = stream_uri
         self.is_ok = False
         self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
+        self._thread: threading.Thread
 
         if not ndi.initialize():
             return
@@ -125,7 +125,22 @@ class NDIVideoStream():
 
         self.fps = 120  # high value so we can fetch the real value when we receive the first video frame
         self._last_read = time.time()
+
+        self._no_frame_chances = 5
+
+        self._is_running = True
+        self._thread = threading.Thread(target=self._update_texture)
+        self._thread.daemon = True
+        self._thread.start()
+
         self.is_ok = True
+
+    def destroy(self):
+        self._is_running = False
+        self._thread.join()
+        self._thread = None
+        ndi.recv_destroy(self._ndi_recv)
+        ndi.destroy()
 
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
@@ -139,29 +154,32 @@ class NDIVideoStream():
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_LOWEST
         return recv_create_desc
 
-    def destroy(self):
-        super.destroy()
-        ndi.recv_destroy(self._ndi_recv)
-        ndi.destroy()
-
     @carb.profiler.profile
-    def update(self):
-        now = time.time()
-        time_delta = now - self._last_read
-        if (time_delta < 1.0 / self.fps):
-            return
-        self._last_read = now
+    def _update_texture(self):
+        while self._is_running:
+            now = time.time()
+            time_delta = now - self._last_read
+            if (time_delta < 1.0 / self.fps):
+                continue
+            self._last_read = now
 
-        t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 5000)
+            t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 1000)
 
-        if t == ndi.FRAME_TYPE_VIDEO:
-            self.fps = v.frame_rate_N / v.frame_rate_D
-            # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
-            frame = v.data
-            frame[..., :3] = frame[..., 2::-1]  # BGRA to RGBA (Could be done in shader?)
-            height, width, channels = frame.shape
-            self._dynamic_texture.set_data_array(frame, [width, height, channels])
-            ndi.recv_free_video_v2(self._ndi_recv, v)
+            if t == ndi.FRAME_TYPE_VIDEO:
+                self.fps = v.frame_rate_N / v.frame_rate_D
+                # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
+                frame = v.data
+                frame[..., :3] = frame[..., 2::-1]  # BGRA to RGBA (Could be done in shader?)
+                height, width, channels = frame.shape
+                self._dynamic_texture.set_data_array(frame, [width, height, channels])
+                ndi.recv_free_video_v2(self._ndi_recv, v)
+
+            if t == ndi.FRAME_TYPE_NONE:
+                self._no_frame_chances -= 1
+                if (self._no_frame_chances <= 0):
+                    self._is_running = False
+            else:
+                self._no_frame_chances = 5
 
 
 class NDIVideoStreamProxy(NDIVideoStream):
@@ -183,18 +201,27 @@ class NDIVideoStreamProxy(NDIVideoStream):
 
         self.fps = fps
         self._last_read = time.time()
+
+        self._is_running = True
+        self._thread = threading.Thread(target=self._update_texture)
+        self._thread.daemon = True
+        self._thread.start()
+
         self.is_ok = True
 
     def destroy(self):
-        super.destroy()
+        self._is_running = False
+        self._thread.join()
+        self._thread = None
 
     @carb.profiler.profile
-    def update(self):
-        now = time.time()
-        time_delta = now - self._last_read
-        if (time_delta < 1.0 / self.fps):
-            return
-        self._last_read = now
+    def update_texture(self):
+        while self._is_running:
+            now = time.time()
+            time_delta = now - self._last_read
+            if (time_delta < 1.0 / self.fps):
+                continue
+            self._last_read = now
 
-        height, width, channels = self._frame.shape
-        self._dynamic_texture.set_data_array(self._frame, [width, height, channels])
+            height, width, channels = self._frame.shape
+            self._dynamic_texture.set_data_array(self._frame, [width, height, channels])
