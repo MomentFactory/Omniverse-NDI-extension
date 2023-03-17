@@ -1,5 +1,5 @@
 [package]
-version = "0.5.0"
+version = "0.6.0"
 
 title = "Omniverse NDI® extension"
 description = "Bring live video feeds as dynamic textures in your stages."
