@@ -76,8 +76,8 @@ class NDIfinder():
         self._on_sources_changed = on_sources_changed
         self._previous_sources: List[str] = []
 
-        self._is_running = True
         if tools.is_ndi_ok():
+            self._is_running = True
             self._ndi_find = tools.get_ndi_find()
             self._thread = threading.Thread(target=self._search)
             self._thread.daemon = True
@@ -95,9 +95,10 @@ class NDIfinder():
                 time.sleep(NDIfinder.SLEEP_INTERVAL)
 
     def destroy(self):
-        self._is_running = False
-        self._thread.join()
-        self._thread = None
+        if self._is_running:
+            self._is_running = False
+            self._thread.join()
+            self._thread = None
 
 
 class NDIVideoStream():
