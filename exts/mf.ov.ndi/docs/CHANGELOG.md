@@ -4,14 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.7.0] - 2023-03-21
+
+### Fixed
+- Removed the parts of the extension that caused the app to freeze. Might still encounter low fps during the following:
+    - Starting a stream
+    - Closing a ndi source while the stream is still running in the extension
+    - Using Remote Connection 1 or proxy as a stream source
+
 ## [0.6.0] - 2023-03-16
 
-## Changed
+### Changed
 - Stream Optimization (no need to flatten the ndi frame)
 - Individual streams now run in different thread
 - Removed refresh ndi feed button in favor of a watcher that runs on a second thread
+- If a ndi source closes while the stream is still running in the extension, it will automatically stop after a few seconds (5)
 
-## Fixed
+### Fixed
 - Extension is now know as mf.ov.ndi
 - Omniverse app won't crash when the ndi source is closed and a stream is still running
     - The app will still freeze for a few seconds
