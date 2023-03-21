@@ -108,7 +108,6 @@ class NDIVideoStream():
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
-        self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
         self._thread: threading.Thread
 
         if not tools.is_ndi_ok():
@@ -139,13 +138,8 @@ class NDIVideoStream():
 
         ndi.recv_connect(self._ndi_recv, source)
 
-        self.fps = 120  # high value so we can fetch the real value when we receive the first video frame
-        self._last_read = time.time()
-
-        self._no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * self.fps
-
         self._is_running = True
-        self._thread = threading.Thread(target=self._update_texture)
+        self._thread = threading.Thread(target=self._update_texture, args=(name, ))
         self._thread.daemon = True
         self._thread.start()
 
@@ -170,31 +164,37 @@ class NDIVideoStream():
         return recv_create_desc
 
     @carb.profiler.profile
-    def _update_texture(self):
+    def _update_texture(self, name: str):
+        dynamic_texture = omni.ui.DynamicTextureProvider(name)
+
+        last_read = time.time() - 1  # Make sure we run on the first frame
+        fps = 120.0
+        no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
+
         while self._is_running:
             now = time.time()
-            time_delta = now - self._last_read
-            if (time_delta < 1.0 / self.fps):
+            time_delta = now - last_read
+            if (time_delta < 1.0 / fps):
                 continue
-            self._last_read = now
+            last_read = now
 
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
 
             if t == ndi.FRAME_TYPE_VIDEO:
-                self.fps = v.frame_rate_N / v.frame_rate_D
+                fps = v.frame_rate_N / v.frame_rate_D
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
                 frame = v.data
                 frame[..., :3] = frame[..., 2::-1]  # BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
-                self._dynamic_texture.set_data_array(frame, [width, height, channels])
+                dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
 
             if t == ndi.FRAME_TYPE_NONE:
-                self._no_frame_chances -= 1
-                if (self._no_frame_chances <= 0):
+                no_frame_chances -= 1
+                if (no_frame_chances <= 0):
                     self._is_running = False
             else:
-                self._no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * self.fps
+                no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
 
 
 class NDIVideoStreamProxy(NDIVideoStream):
@@ -202,23 +202,15 @@ class NDIVideoStreamProxy(NDIVideoStream):
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
-        self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
 
         denominator = 1
         if lowbandwidth:
             denominator = 3
-
         w = int(1920 / denominator)
         h = int(1080 / denominator)
-        c = np.array([255, 0, 0, 255], np.uint8)
-        frame = np.full((h, w, len(c)), c, dtype=np.uint8)
-        self._frame = frame
-
-        self.fps = fps
-        self._last_read = time.time()
 
         self._is_running = True
-        self._thread = threading.Thread(target=self._update_texture)
+        self._thread = threading.Thread(target=self._update_texture, args=(name, fps, w, h, ))
         self._thread.daemon = True
         self._thread.start()
 
@@ -230,13 +222,19 @@ class NDIVideoStreamProxy(NDIVideoStream):
         self._thread = None
 
     @carb.profiler.profile
-    def _update_texture(self):
+    def _update_texture(self, name: str, fps: float, width: float, height: float):
+        color = np.array([255, 0, 0, 255], np.uint8)
+        channels = len(color)
+        dynamic_texture = omni.ui.DynamicTextureProvider(name)
+
+        last_read = time.time() - 1  # Make sure we run on the first frame
+
         while self._is_running:
             now = time.time()
-            time_delta = now - self._last_read
-            if (time_delta < 1.0 / self.fps):
+            time_delta = now - last_read
+            if (time_delta < 1.0 / fps):
                 continue
-            self._last_read = now
+            last_read = now
 
-            height, width, channels = self._frame.shape
-            self._dynamic_texture.set_data_array(self._frame, [width, height, channels])
+            frame = np.full((height, width, channels), color, dtype=np.uint8)
+            dynamic_texture.set_data_array(frame, [width, height, channels])
