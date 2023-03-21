@@ -165,12 +165,14 @@ class NDIVideoStream():
 
     @carb.profiler.profile
     def _update_texture(self, name: str):
+        carb.profiler.begin(0, 'Omniverse NDI®::Init')
         dynamic_texture = omni.ui.DynamicTextureProvider(name)
 
         last_read = time.time() - 1  # Make sure we run on the first frame
         fps = 120.0
         no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
 
+        carb.profiler.end(0)
         while self._is_running:
             now = time.time()
             time_delta = now - last_read
@@ -178,9 +180,12 @@ class NDIVideoStream():
                 continue
             last_read = now
 
+            carb.profiler.begin(1, 'Omniverse NDI®::receive frame')
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
+            carb.profiler.end(1)
 
             if t == ndi.FRAME_TYPE_VIDEO:
+                carb.profiler.begin(2, 'Omniverse NDI®::set_data')
                 fps = v.frame_rate_N / v.frame_rate_D
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
                 frame = v.data
@@ -188,6 +193,7 @@ class NDIVideoStream():
                 height, width, channels = frame.shape
                 dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
+                carb.profiler.end(2)
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1
@@ -197,7 +203,7 @@ class NDIVideoStream():
                 no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
 
 
-class NDIVideoStreamProxy(NDIVideoStream):
+class NDIVideoStreamProxy():
     def __init__(self, name: str, stream_uri: str, fps: float, lowbandwidth: bool):
         self.name = name
         self.uri = stream_uri
@@ -228,13 +234,15 @@ class NDIVideoStreamProxy(NDIVideoStream):
         dynamic_texture = omni.ui.DynamicTextureProvider(name)
 
         last_read = time.time() - 1  # Make sure we run on the first frame
-
         while self._is_running:
+            carb.profiler.begin(1, 'Omniverse NDI®::Proxy loop')
             now = time.time()
             time_delta = now - last_read
             if (time_delta < 1.0 / fps):
+                carb.profiler.end(1)
                 continue
             last_read = now
 
             frame = np.full((height, width, channels), color, dtype=np.uint8)
             dynamic_texture.set_data_array(frame, [width, height, channels])
+            carb.profiler.end(1)
