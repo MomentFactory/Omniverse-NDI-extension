@@ -230,7 +230,7 @@ class NDIVideoStreamProxy(NDIVideoStream):
         self._thread = None
 
     @carb.profiler.profile
-    def update_texture(self):
+    def _update_texture(self):
         while self._is_running:
             now = time.time()
             time_delta = now - self._last_read
