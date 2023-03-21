@@ -30,81 +30,96 @@ class NDIData():
         self._on_value_changed_fn = fn
 
 
-class NDIfinder():
-    SLEEP_INTERVAL: float = 2  # seconds
-
-    def __init__(self, on_sources_changed):
-        self._on_sources_changed = on_sources_changed
-        self._previous_sources: List[str] = []
-
-        self._is_running = True
-        self._thread = threading.Thread(target=self._search)
-        self._thread.daemon = True
-        self._thread.start()
-
-    def _search(self):
-        logger = logging.getLogger(__name__)
-
-        if not ndi.initialize():
-            self._is_running = False
-            logger.error("Could not initialize ndi")
-            return
-
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            self._is_running = False
-            logger.error("Could not initialize ndi find")
-            ndi.destroy()
-            return
-
-        while self._is_running:
-            sources = ndi.find_get_current_sources(ndi_find)
-            result = [s.ndi_name for s in sources]
-            delta = set(result) ^ set(self._previous_sources)
-            if len(delta) > 0:
-                self._previous_sources = result
-                self._on_sources_changed(result)
-            time.sleep(NDIfinder.SLEEP_INTERVAL)
-
-        ndi.find_destroy(ndi_find)
-        ndi.destroy()
-
-    def destroy(self):
-        self._is_running = False
-        self._thread.join()
-        self._thread = None
-
-
 class NDItools():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE)
     PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
 
+    def __init__(self):
+        self._ndi_ok = False
+        self._ndi_find = None
+
+    def ndi_init(self):
+        if not ndi.initialize():
+            logger = logging.getLogger(__name__)
+            logger.error("Could not initialize ndi")
+            return
+        self._ndi_ok = True
+
+    def ndi_find_init(self):
+        self._ndi_find = ndi.find_create_v2()
+        if self._ndi_find is None:
+            self._is_running = False
+            logger = logging.getLogger(__name__)
+            logger.error("Could not initialize ndi find")
+            ndi.destroy()
+            self._ndi_ok = False
+            return
+
+    def get_ndi_find(self):
+        return self._ndi_find
+
+    def is_ndi_ok(self):
+        return self._ndi_ok
+
+    def destroy(self):
+        if self._ndi_ok:
+            if self._ndi_find is not None:
+                ndi.find_destroy(self._ndi_find)
+            ndi.destroy()
+        self._ndi_ok = False
+
+
+class NDIfinder():
+    SLEEP_INTERVAL: float = 2  # seconds
+
+    def __init__(self, on_sources_changed, tools: NDItools):
+        self._on_sources_changed = on_sources_changed
+        self._previous_sources: List[str] = []
+
+        if tools.is_ndi_ok():
+            self._is_running = True
+            self._ndi_find = tools.get_ndi_find()
+            self._thread = threading.Thread(target=self._search)
+            self._thread.daemon = True
+            self._thread.start()
+
+    def _search(self):
+        if self._ndi_find is not None:
+            while self._is_running:
+                sources = ndi.find_get_current_sources(self._ndi_find)
+                result = [s.ndi_name for s in sources]
+                delta = set(result) ^ set(self._previous_sources)
+                if len(delta) > 0:
+                    self._previous_sources = result
+                    self._on_sources_changed(result)
+                time.sleep(NDIfinder.SLEEP_INTERVAL)
+
+    def destroy(self):
+        if self._is_running:
+            self._is_running = False
+            self._thread.join()
+            self._thread = None
+
 
 class NDIVideoStream():
-    def __init__(self, name: str, stream_uri: str, lowbandwidth: bool):
+    NO_FRAME_TIMEOUT = 5  # seconds
+
+    def __init__(self, name: str, stream_uri: str, lowbandwidth: bool, tools: NDItools):
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
         self._dynamic_texture = omni.ui.DynamicTextureProvider(name)
         self._thread: threading.Thread
 
-        if not ndi.initialize():
+        if not tools.is_ndi_ok():
             return
 
-        ndi_find = ndi.find_create_v2()
-        if ndi_find is None:
-            return 0
-
-        sources = []
+        ndi_find = tools.get_ndi_find()
         source = None
-        timeout = time.time() + 10
-        while source is None and time.time() < timeout:
-            ndi.find_wait_for_sources(ndi_find, 1000)
-            sources = ndi.find_get_current_sources(ndi_find)
-
-            source_candidates = [s for s in sources if s.ndi_name == stream_uri]
-            if len(source_candidates) != 0:
-                source = source_candidates[0]
+        sources = ndi.find_get_current_sources(ndi_find)
+        source_candidates = [s for s in sources if s.ndi_name == stream_uri]
+        if len(source_candidates) != 0:
+            source = source_candidates[0]
 
         if source is None:
             logger = logging.getLogger(__name__)
@@ -118,15 +133,16 @@ class NDIVideoStream():
 
         self._ndi_recv = ndi.recv_create_v3(recv_create_desc)
         if self._ndi_recv is None:
-            return 0
+            logger = logging.getLogger(__name__)
+            logger.error("Could not create ndi receiver")
+            return
 
         ndi.recv_connect(self._ndi_recv, source)
-        ndi.find_destroy(ndi_find)
 
         self.fps = 120  # high value so we can fetch the real value when we receive the first video frame
         self._last_read = time.time()
 
-        self._no_frame_chances = 5
+        self._no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * self.fps
 
         self._is_running = True
         self._thread = threading.Thread(target=self._update_texture)
@@ -140,7 +156,6 @@ class NDIVideoStream():
         self._thread.join()
         self._thread = None
         ndi.recv_destroy(self._ndi_recv)
-        ndi.destroy()
 
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
@@ -163,7 +178,7 @@ class NDIVideoStream():
                 continue
             self._last_read = now
 
-            t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 1000)
+            t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
 
             if t == ndi.FRAME_TYPE_VIDEO:
                 self.fps = v.frame_rate_N / v.frame_rate_D
@@ -179,7 +194,7 @@ class NDIVideoStream():
                 if (self._no_frame_chances <= 0):
                     self._is_running = False
             else:
-                self._no_frame_chances = 5
+                self._no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * self.fps
 
 
 class NDIVideoStreamProxy(NDIVideoStream):
@@ -215,7 +230,7 @@ class NDIVideoStreamProxy(NDIVideoStream):
         self._thread = None
 
     @carb.profiler.profile
-    def update_texture(self):
+    def _update_texture(self):
         while self._is_running:
             now = time.time()
             time_delta = now - self._last_read

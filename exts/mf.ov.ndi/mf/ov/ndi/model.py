@@ -52,7 +52,10 @@ class NDIModel():
         self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
 
         self._streams: List[NDIVideoStream] = []
-        self._ndi_finder: NDIfinder = NDIfinder(self._on_ndi_source_changed)
+        self._ndi_tools = NDItools()
+        self._ndi_tools.ndi_init()
+        self._ndi_tools.ndi_find_init()
+        self._ndi_finder: NDIfinder = NDIfinder(self._on_ndi_source_changed, self._ndi_tools)
         # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
 
     def _on_update(self, e):
@@ -77,6 +80,7 @@ class NDIModel():
             r.destroy()
 
     def on_shutdown(self):
+        self._ndi_tools.destroy()
         if self._ndi_finder:
             self._ndi_finder.destroy()
         self._sub.unsubscribe()
@@ -94,7 +98,7 @@ class NDIModel():
             video_stream = NDIVideoStreamProxy(name, uri, fps, lowbandwidth)
             self._add_stream(video_stream, uri)
         else:
-            video_stream = NDIVideoStream(name, uri, lowbandwidth)
+            video_stream = NDIVideoStream(name, uri, lowbandwidth, self._ndi_tools)
             self._add_stream(video_stream, uri)
 
     def _add_stream(self, video_stream, uri):
