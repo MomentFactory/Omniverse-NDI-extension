@@ -22,18 +22,14 @@ class ComboboxModel(ui.AbstractItemModel):
     watchers = []
 
     @staticmethod
-    def clearAllItems():
+    def SetItems(values):
+        # Set the updated values while keeping the index accurate to the value potential new position
+        sources: List[str] = [ComboboxModel.items[combobox._current_index.get_value_as_int()].value() for combobox in ComboboxModel.watchers]
         ComboboxModel.items = []
-        ComboboxModel._notify()
-
-    @staticmethod
-    def AddItem(ndi):
-        ComboboxModel.items.append(ComboboxItem(ndi))
-        ComboboxModel._notify()
-
-    @staticmethod
-    def _notify():
-        for watcher in ComboboxModel.watchers:
+        for value in values:
+            ComboboxModel.items.append(ComboboxItem(value))
+        for i, watcher in enumerate(ComboboxModel.watchers):
+            watcher._set_index_from_value(sources[i])
             watcher._item_changed(None)
 
     @staticmethod
@@ -52,10 +48,12 @@ class ComboboxModel(ui.AbstractItemModel):
             lambda a: self._current_index_changed_fn()
         )
 
+        self._set_index_from_value(value)
+        ComboboxModel.watchers.append(self)
+
+    def _set_index_from_value(self, value: str):
         index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)
         self._current_index.set_value(index)
-
-        ComboboxModel.watchers.append(self)
 
     def _current_index_changed_fn(self):
         self._model.set_binding(self._name, self.currentvalue())
