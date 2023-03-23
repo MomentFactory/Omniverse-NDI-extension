@@ -24,7 +24,7 @@ class ComboboxModel(ui.AbstractItemModel):
     @staticmethod
     def SetItems(values):
         # Set the updated values while keeping the index accurate to the value potential new position
-        sources: List[str] = [ComboboxModel.items[combobox._current_index.get_value_as_int()].value() for combobox in ComboboxModel.watchers]
+        sources: List[str] = [combobox.currentvalue() for combobox in ComboboxModel.watchers]
         ComboboxModel.items = []
         for value in values:
             ComboboxModel.items.append(ComboboxItem(value))
@@ -36,12 +36,13 @@ class ComboboxModel(ui.AbstractItemModel):
     def ResetWatchers():
         ComboboxModel.watchers = []
 
-    def __init__(self, name: str, model, value: str, on_change_fn):
+    def __init__(self, name: str, model, value: str, on_change_fn, combobox_alt):
         super().__init__()
 
         self._model = model
         self._name = name
         self._on_change_fn = on_change_fn
+        self._combobox_alt = combobox_alt
 
         self._current_index = ui.SimpleIntModel()
         self._current_index.add_value_changed_fn(
@@ -50,6 +51,7 @@ class ComboboxModel(ui.AbstractItemModel):
 
         self._set_index_from_value(value)
         ComboboxModel.watchers.append(self)
+        self.set_alt_value()
 
     def _set_index_from_value(self, value: str):
         index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)
@@ -59,6 +61,10 @@ class ComboboxModel(ui.AbstractItemModel):
         self._model.set_binding(self._name, self.currentvalue())
         self._item_changed(None)
         self._on_change_fn()
+        self.set_alt_value()
+
+    def set_alt_value(self):
+        self._combobox_alt.text = self.currentvalue() + " - running"
 
     def currentvalue(self):
         self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
