@@ -113,7 +113,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self._status_label_inactive = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
                         self._status_label_active = ui.Image(NDIBindingPanel.NDI_ACTIVE, width=30)
                         self._on_ndi_status_change()
-                        self._combobox_alt = ui.Label(ComboboxModel.NONE_VALUE + " - running")
+                        self._combobox_alt = ui.Label("")
                         self._combobox_alt.visible = False
                         self._combobox = ComboboxModel(name, model, binding.get_source(), self._on_ndi_status_change,
                                                        self._combobox_alt)
