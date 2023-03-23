@@ -113,9 +113,12 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self._status_label_inactive = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
                         self._status_label_active = ui.Image(NDIBindingPanel.NDI_ACTIVE, width=30)
                         self._on_ndi_status_change()
-                        self._combobox = ComboboxModel(name, model, binding.get_source(), self._on_ndi_status_change)
+                        self._combobox_alt = ui.Label("NONE - running")
+                        self._combobox_alt.visible = False
+                        self._combobox = ComboboxModel(name, model, binding.get_source(), self._on_ndi_status_change,
+                                                       self._combobox_alt)
                         binding.register_status_fn(self._on_ndi_status_change)
-                        ui.ComboBox(self._combobox)
+                        self._combobox_ui = ui.ComboBox(self._combobox)
                         ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
                         ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
 
@@ -134,11 +137,15 @@ class NDIBindingPanel(ui.CollapsableFrame):
 
     def _on_click_play_ndi(self):
         lowbandwidth = self.lowbandwidth.model.get_value_as_bool()
-        self.lowbandwidth.enabled = False
-        self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth)
+        if self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth):
+            self.lowbandwidth.enabled = False
+            self._combobox_ui.visible = False
+            self._combobox_alt.visible = True
 
     def _on_click_pause_ndi(self):
         self.lowbandwidth.enabled = True
+        self._combobox_alt.visible = False
+        self._combobox_ui.visible = True
         self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
 
     def _on_ndi_status_change(self):

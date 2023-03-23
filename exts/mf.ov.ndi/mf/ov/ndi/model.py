@@ -87,19 +87,21 @@ class NDIModel():
         self.kill_all_streams()
 
 # region streams
-    def add_stream(self, name: str, uri: str, lowbandwidth: bool):
+    def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
         if uri == ComboboxModel.NONE_VALUE:
             logger = logging.getLogger(__name__)
             logger.warning("Won't create stream without ndi source")
-            return
+            return False
 
         if uri == ComboboxModel.PROXY_VALUE:
             fps = float(re.search("\((.*)\)", uri).group(1).split("p")[1])
             video_stream = NDIVideoStreamProxy(name, uri, fps, lowbandwidth)
             self._add_stream(video_stream, uri)
+            return True
         else:
             video_stream = NDIVideoStream(name, uri, lowbandwidth, self._ndi_tools)
             self._add_stream(video_stream, uri)
+            return True
 
     def _add_stream(self, video_stream, uri):
         if not video_stream.is_ok:
