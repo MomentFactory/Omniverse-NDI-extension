@@ -201,16 +201,25 @@ class NDIModel():
         self._push_ndi_to_combobox()
 
     def _apply_ndi_feeds(self, others: List[str]):
-        self._reset_ndi_feeds()
-        self._add_bindings_to_feeds()
+        previous_sources =  [feed.get_source() for feed in self._ndi_feeds
+                             if feed.get_source() is not ComboboxModel.NONE_VALUE
+                             and feed.get_source() is not ComboboxModel.PROXY_VALUE]
+        new_sources = set(others) - set(previous_sources)
+        sources_inactive = set(previous_sources) - set(others)
+        sources_active = set(others) & set(previous_sources)
 
-        for other in others:
+        for other in new_sources:
+            self._ndi_feeds.append(NDIData(other, True))
+
+        for other in sources_inactive:
             found: NDIData = self._find_ndidata_from_source(other)
-            if found is None:
-                self._ndi_feeds.append(NDIData(other, True))
-            else:
-                found.set_active()
-            # TODO: Make inactive if in self._ndi_feeds but not in others
+            if found is not None:
+                found.set_active(False)
+
+        for other in sources_active:
+            found: NDIData = self._find_ndidata_from_source(other)
+            if found is not None:
+                found.set_active(True)
 
         self._push_ndi_to_combobox()
 
