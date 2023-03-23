@@ -220,7 +220,6 @@ class NDIModel():
         self._ndi_feeds = [NDItools.NONE_DATA, NDItools.PROXY_DATA]
 
     def _push_ndi_to_combobox(self):
-        ComboboxModel.clearAllItems()
-        for x in self._ndi_feeds:
-            ComboboxModel.AddItem(x)
+        ComboboxModel.SetItems(self._ndi_feeds)
+
 # endregion
