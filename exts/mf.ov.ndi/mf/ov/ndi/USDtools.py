@@ -1,9 +1,10 @@
 import omni.ext
 from typing import List
-from pxr import Usd, UsdShade, Sdf, UsdLux
+from pxr import Usd, UsdShade, Sdf, UsdLux, Tf
 from dataclasses import dataclass
 import logging
 import numpy as np
+import logging
 
 
 @dataclass
@@ -23,19 +24,24 @@ class USDtools():
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
 
-        material_path = f"/Looks/{name}/Material"
+        safename = Tf.MakeValidIdentifier(name)
+        if name != safename:
+            logger = logging.getLogger(__name__)
+            logger.warn(f"Name \"{name}\" was not valid, changed it to \"{safename}\"")
+
+        material_path = f"/Looks/{safename}/Material"
         material: UsdShade.Material = UsdShade.Material.Define(stage, material_path)
         shader: UsdShade.Shader = UsdShade.Shader.Define(stage, f"{material_path}/Shader")
         shader.SetSourceAsset("OmniPBR.mdl", "mdl")
         shader.SetSourceAssetSubIdentifier("OmniPBR", "mdl")
         shader.CreateIdAttr("OmniPBR")
-        shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(f"{USDtools.PREFIX}{name}")
+        shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(f"{USDtools.PREFIX}{safename}")
         material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), "surface")
 
         magenta = np.array([255, 0, 255, 255], np.uint8)
         frame = np.full((1, 1, 4), magenta, dtype=np.uint8)
         height, width, channels = frame.shape
-        dynamic_texture = omni.ui.DynamicTextureProvider(name)
+        dynamic_texture = omni.ui.DynamicTextureProvider(safename)
         dynamic_texture.set_data_array(frame, [width, height, channels])
         # dynamic_texture.set_bytes_data(frame.flatten().tolist(), [1, 1], omni.ui.TextureFormat.RGBA8_UNORM)
 
