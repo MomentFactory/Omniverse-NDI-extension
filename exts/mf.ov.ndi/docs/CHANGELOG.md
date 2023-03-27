@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Profiling in NDI stream functions
 
 ### Changed
-- When a stream is running, it is no longer possible to changed its source, display a running status instead
+- When a stream is running, it is no longer possible to change its source, display a running status instead
 
 ### Fixed
 - Selected NDI source in combobox doesn't change when wources are updated
