@@ -101,6 +101,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
         name = binding.get_id()
         super().__init__(name, **kwargs)
         self._binding: NDIBinding = binding
+        self._binding.set_panel(self)
         self._window = window
         self._model = model
         with self:
@@ -114,14 +115,11 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self.lowbandwidth.model.add_value_changed_fn(self._set_low_bandwidth_value)
                         self.lowbandwidth.model.set_value(self._binding.get_lowbandwidth())
                     with ui.HStack():
-                        self._status_label_inactive = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
-                        self._status_label_active = ui.Image(NDIBindingPanel.NDI_ACTIVE, width=30)
-                        self._on_ndi_status_change()
+                        self._status_icon = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
                         self._combobox_alt = ui.Label("")
                         self._combobox_alt.visible = False
-                        self._combobox = ComboboxModel(name, model, binding.get_source(), self._on_ndi_status_change,
+                        self._combobox = ComboboxModel(name, model, binding.get_source(), self.on_ndi_status_change,
                                                        self._combobox_alt)
-                        binding.register_status_fn(self._on_ndi_status_change)
                         self._combobox_ui = ui.ComboBox(self._combobox)
                         ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
                         ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
@@ -147,6 +145,9 @@ class NDIBindingPanel(ui.CollapsableFrame):
             self._combobox_alt.visible = True
 
     def _on_click_pause_ndi(self):
+        self._kill_stream()
+
+    def _kill_stream(self):
         self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
         self.on_stream_stopped()
 
@@ -155,13 +156,10 @@ class NDIBindingPanel(ui.CollapsableFrame):
         self._combobox_alt.visible = False
         self._combobox_ui.visible = True
 
-    def _on_ndi_status_change(self):
+    def on_ndi_status_change(self):
         status = self._binding.get_ndi_status()
         if status:
-            self._status_label_active.visible = True
-            self._status_label_inactive.visible = False
+            self._status_icon.source_url = NDIBindingPanel.NDI_ACTIVE
         else:
-            self._status_label_active.visible = False
-            self._status_label_inactive.visible = True
-        # TODO: Better rebuild (sub component instead of whole window)
-        self._window.frame.rebuild()
+            self._status_icon.source_url = NDIBindingPanel.NDI_INACTIVE
+            self._kill_stream()

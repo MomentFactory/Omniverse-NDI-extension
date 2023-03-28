@@ -42,16 +42,16 @@ class ComboboxModel(ui.AbstractItemModel):
         self._model = model
         self._name = name
         self._on_change_fn = on_change_fn
-        self._combobox_alt = combobox_alt
 
         self._current_index = ui.SimpleIntModel()
+        self._set_index_from_value(value)
+        ComboboxModel.watchers.append(self)
+
+        self._combobox_alt = combobox_alt
+
         self._current_index.add_value_changed_fn(
             lambda a: self._current_index_changed_fn()
         )
-
-        self._set_index_from_value(value)
-        ComboboxModel.watchers.append(self)
-        self.set_alt_value()
 
     def _set_index_from_value(self, value: str):
         index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)
