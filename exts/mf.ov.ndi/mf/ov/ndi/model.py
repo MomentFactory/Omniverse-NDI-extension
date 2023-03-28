@@ -13,6 +13,7 @@ class NDIBinding():
         self._ndi = ndi
         self._path = path
         self._lowbandwidth = lowbandwidth
+        self._panel = None
 
     def get_id(self) -> str:
         return self._dynamic_id
@@ -24,7 +25,9 @@ class NDIBinding():
         return self._ndi.get_source()
 
     def set_ndi_id(self, ndi: NDIData):
+        self._ndi.set_active_value_changed_fn(None)
         self._ndi = ndi
+        self._ndi.set_active_value_changed_fn(self._on_active_value_changed)
         USDtools.set_prim_ndi_attribute(self._path, self._ndi.get_source())
 
     def set_lowbandwidth(self, value: bool):
@@ -34,11 +37,14 @@ class NDIBinding():
     def get_lowbandwidth(self) -> bool:
         return self._lowbandwidth
 
-    def register_status_fn(self, fn):
-        self._ndi.set_active_value_changed_fn(fn)
-
     def get_ndi_status(self) -> bool:
         return self._ndi.is_active()
+
+    def set_panel(self, panel):
+        self._panel = panel
+
+    def _on_active_value_changed(self):
+        self._panel.on_ndi_status_change()
 
 
 class NDIModel():
