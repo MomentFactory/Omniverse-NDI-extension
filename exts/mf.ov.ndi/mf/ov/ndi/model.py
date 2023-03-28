@@ -178,7 +178,7 @@ class NDIModel():
         else:
             ndi = self._find_ndidata_from_source(ndi_source)
             if ndi is None:
-                logger.error(f"No ndi source found for {ndi_source}")
+                logger.error(f"No NDI® source found for {ndi_source}")
             else:
                 binding.set_ndi_id(ndi)
 

@@ -132,7 +132,7 @@ class NDIVideoStream():
         self._ndi_recv = ndi.recv_create_v3(recv_create_desc)
         if self._ndi_recv is None:
             logger = logging.getLogger(__name__)
-            logger.error("Could not create ndi receiver")
+            logger.error("Could not create NDI® receiver")
             return
 
         ndi.recv_connect(self._ndi_recv, source)
