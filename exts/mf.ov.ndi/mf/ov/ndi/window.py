@@ -10,7 +10,7 @@ class NDIWindow(ui.Window):
 
     def __init__(self, delegate=None, **kwargs):
         super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
-        self._model: NDIModel = NDIModel()
+        self._model: NDIModel = NDIModel(self)
         self._refresh_materials()
         self.frame.set_build_fn(self._build_fn)
 
@@ -24,6 +24,10 @@ class NDIWindow(ui.Window):
             with ui.VStack(style={"margin": 3}):
                 self._ui_section_header()
                 self._ui_section_bindings()
+
+    def on_kill_all_streams(self):
+        for panel in self._bindingPanels:
+            panel.on_stream_stopped()
 
 # region UI
     def _ui_section_header(self):
@@ -143,10 +147,13 @@ class NDIBindingPanel(ui.CollapsableFrame):
             self._combobox_alt.visible = True
 
     def _on_click_pause_ndi(self):
+        self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
+        self.on_stream_stopped()
+
+    def on_stream_stopped(self):
         self.lowbandwidth.enabled = True
         self._combobox_alt.visible = False
         self._combobox_ui.visible = True
-        self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
 
     def _on_ndi_status_change(self):
         status = self._binding.get_ndi_status()
