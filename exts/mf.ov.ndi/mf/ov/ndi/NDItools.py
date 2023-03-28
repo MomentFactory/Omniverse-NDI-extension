@@ -80,7 +80,6 @@ class NDIfinder():
             self._is_running = True
             self._ndi_find = tools.get_ndi_find()
             self._thread = threading.Thread(target=self._search)
-            self._thread.daemon = True
             self._thread.start()
 
     def _search(self):
@@ -140,7 +139,6 @@ class NDIVideoStream():
 
         self._is_running = True
         self._thread = threading.Thread(target=self._update_texture, args=(name, ))
-        self._thread.daemon = True
         self._thread.start()
 
         self.is_ok = True
@@ -222,7 +220,6 @@ class NDIVideoStreamProxy():
 
         self._is_running = True
         self._thread = threading.Thread(target=self._update_texture, args=(name, fps, w, h, ))
-        self._thread.daemon = True
         self._thread.start()
 
         self.is_ok = True
