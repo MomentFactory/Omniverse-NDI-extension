@@ -41,7 +41,7 @@ class NDItools():
     def ndi_init(self):
         if not ndi.initialize():
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi")
+            logger.error("Could not initialize NDI®")
             return
         self._ndi_ok = True
 
@@ -50,7 +50,7 @@ class NDItools():
         if self._ndi_find is None:
             self._is_running = False
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi find")
+            logger.error("Could not initialize NDI® find")
             ndi.destroy()
             self._ndi_ok = False
             return

@@ -97,7 +97,7 @@ class NDIModel():
     def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
         if uri == ComboboxModel.NONE_VALUE:
             logger = logging.getLogger(__name__)
-            logger.warning("Won't create stream without ndi source")
+            logger.warning("Won't create stream without NDI® source")
             return False
 
         if uri == ComboboxModel.PROXY_VALUE:
