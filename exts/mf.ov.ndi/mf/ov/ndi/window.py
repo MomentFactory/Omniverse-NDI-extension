@@ -96,7 +96,8 @@ class NDIWindow(ui.Window):
 class NDIBindingPanel(ui.CollapsableFrame):
     NDI_INACTIVE = "resources/glyphs/error.svg"
     NDI_ACTIVE = "resources/glyphs/check_solid.svg"
-
+    PLAY_ICON = "resources/glyphs/timeline_play.svg"
+    PAUSE_ICON = "resources/glyphs/toolbar_pause.svg"
     def __init__(self, binding: NDIBinding, model: NDIModel, window: NDIWindow, **kwargs):
         name = binding.get_id()
         super().__init__(name, **kwargs)
@@ -121,8 +122,8 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self._combobox = ComboboxModel(name, model, binding.get_source(), self.on_ndi_status_change,
                                                        self._combobox_alt)
                         self._combobox_ui = ui.ComboBox(self._combobox)
-                        ui.Button(">", width=30, clicked_fn=self._on_click_play_ndi)
-                        ui.Button("||", width=30, clicked_fn=self._on_click_pause_ndi)
+                        ui.Button("", image_url=NDIBindingPanel.PLAY_ICON, width=30, height=30, clicked_fn=self._on_click_play_ndi)
+                        ui.Button("", image_url=NDIBindingPanel.PAUSE_ICON, width=30, height=30, clicked_fn=self._on_click_pause_ndi)
 
     def enable_lowbandwidth_checkbox(self):
         self.lowbandwidth.enabled = True
