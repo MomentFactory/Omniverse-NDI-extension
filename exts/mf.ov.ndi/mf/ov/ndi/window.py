@@ -36,10 +36,12 @@ class NDIWindow(ui.Window):
         with ui.HStack(height=0):
             self._dynamic_name = ui.StringField()
             self._dynamic_name.model.set_value("myDynamicMaterial")
-            ui.Button("Create Dynamic Material", image_url="resources/glyphs/menu_plus.svg", image_width=24,
+            ui.Button("Create Dynamic Texture", image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
         with ui.HStack(height=0):
-            ui.Button("Refresh Dynamic Materials", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+            # ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+            #          style=button_style, clicked_fn=self._on_click_refresh_ndi)
+            ui.Button("Discover Dynamic Textures", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
             ui.Button("Stop all streams", clicked_fn=self._kill_all_streams)
 
@@ -61,7 +63,7 @@ class NDIWindow(ui.Window):
         name: str = self._dynamic_name.model.get_value_as_string()
         if name == "":
             logger = logging.getLogger(__name__)
-            logger.warning("Cannot create dynamic material with empty name")
+            logger.warning("Cannot create dynamic texture with empty name")
             return
         self._model.create_dynamic_material(name)
         self.refresh_materials_and_rebuild()
