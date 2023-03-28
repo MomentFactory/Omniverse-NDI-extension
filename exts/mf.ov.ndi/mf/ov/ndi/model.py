@@ -81,11 +81,11 @@ class NDIModel():
             r.destroy()
 
     def on_shutdown(self):
-        self._ndi_tools.destroy()
+        self.kill_all_streams()
         if self._ndi_finder:
             self._ndi_finder.destroy()
+        self._ndi_tools.destroy()
         self._sub.unsubscribe()
-        self.kill_all_streams()
 
 # region streams
     def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
