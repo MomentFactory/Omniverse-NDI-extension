@@ -42,10 +42,11 @@ class NDIBinding():
 
 
 class NDIModel():
-    def __init__(self, ):
+    def __init__(self, window):
         self._bindings: List[NDIBinding] = []
         self._ndi_feeds: List[NDIData] = []
         self._reset_ndi_feeds()
+        self._window = window
 
         self._ndi_source_update: List[str] = []
         stream = omni.kit.app.get_app().get_update_event_stream()
@@ -111,6 +112,7 @@ class NDIModel():
         return True
 
     def kill_all_streams(self):
+        self._window.on_kill_all_streams()
         for stream in self._streams:
             stream.destroy()
         self._streams = []
