@@ -13,6 +13,7 @@ class NDIBinding():
         self._ndi = ndi
         self._path = path
         self._lowbandwidth = lowbandwidth
+        self._panel = None
 
     def get_id(self) -> str:
         return self._dynamic_id
@@ -24,7 +25,9 @@ class NDIBinding():
         return self._ndi.get_source()
 
     def set_ndi_id(self, ndi: NDIData):
+        self._ndi.set_active_value_changed_fn(None)
         self._ndi = ndi
+        self._ndi.set_active_value_changed_fn(self._on_active_value_changed)
         USDtools.set_prim_ndi_attribute(self._path, self._ndi.get_source())
 
     def set_lowbandwidth(self, value: bool):
@@ -34,18 +37,22 @@ class NDIBinding():
     def get_lowbandwidth(self) -> bool:
         return self._lowbandwidth
 
-    def register_status_fn(self, fn):
-        self._ndi.set_active_value_changed_fn(fn)
-
     def get_ndi_status(self) -> bool:
         return self._ndi.is_active()
 
+    def set_panel(self, panel):
+        self._panel = panel
+
+    def _on_active_value_changed(self):
+        self._panel.on_ndi_status_change()
+
 
 class NDIModel():
-    def __init__(self, ):
+    def __init__(self, window):
         self._bindings: List[NDIBinding] = []
         self._ndi_feeds: List[NDIData] = []
         self._reset_ndi_feeds()
+        self._window = window
 
         self._ndi_source_update: List[str] = []
         stream = omni.kit.app.get_app().get_update_event_stream()
@@ -80,11 +87,11 @@ class NDIModel():
             r.destroy()
 
     def on_shutdown(self):
-        self._ndi_tools.destroy()
+        self.kill_all_streams()
         if self._ndi_finder:
             self._ndi_finder.destroy()
+        self._ndi_tools.destroy()
         self._sub.unsubscribe()
-        self.kill_all_streams()
 
 # region streams
     def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
@@ -111,6 +118,7 @@ class NDIModel():
         return True
 
     def kill_all_streams(self):
+        self._window.on_kill_all_streams()
         for stream in self._streams:
             stream.destroy()
         self._streams = []
