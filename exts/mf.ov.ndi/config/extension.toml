@@ -7,7 +7,7 @@ authors = ["Moment Factory","Frederic Lestage"]
 
 readme  = "docs/README.md"
 changelog = "docs/CHANGELOG.md"
-repository = "https://gitlab.com/momentfactory/products/xagora/omniverse/kit-exts-ndi/"
+repository = "https://github.com/MomentFactory/Omniverse-NDI-extension"
 
 category = "Services"
 keywords = ["NDI", "texture", "live-feed", "video", "broadcast", "audiovisual", "realtime"]
