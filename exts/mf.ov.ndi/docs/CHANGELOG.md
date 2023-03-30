@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.1] - 2023-03-29
+
+### Changed
+- Dedicated NDI threads no longer daemonic
+
+### Fixed
+- Stream UI did not go back to its non running state when using the button "kill all streams"
+- Order of calls on application shutdown that could cause a crash on hot reload (affected developers)
+- Status of NDI source not properly reflected in the icons
+
+## [0.8.0] - 2023-03-27
+
+### Added
+- Profiling in NDI stream functions
+
+### Changed
+- When a stream is running, it is no longer possible to change its source, display a running status instead
+
+### Fixed
+- Selected NDI source in combobox doesn't change when wources are updated
+- Make name USD safe when creating new material instead of throwing error
+- NDI status icon goes back to valid if a NDI source is started after being closed
+- Won't attempt to start a stream if it isn't valid (i.e. can't find the source)
+
 ## [0.7.0] - 2023-03-21
 
 ### Fixed
