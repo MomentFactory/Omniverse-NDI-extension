@@ -52,6 +52,7 @@ class ComboboxModel(ui.AbstractItemModel):
         self._current_index.add_value_changed_fn(
             lambda a: self._current_index_changed_fn()
         )
+        self.set_alt_value()
 
     def _set_index_from_value(self, value: str):
         index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)

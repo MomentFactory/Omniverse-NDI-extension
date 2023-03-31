@@ -82,8 +82,7 @@ class NDIWindow(ui.Window):
     def _kill_all_streams(self):
         self._model.kill_all_streams()
         for panel in self._bindingPanels:
-            panel.enable_lowbandwidth_checkbox()
-
+            panel.on_stream_stopped()
 # endregion
 
 
@@ -112,7 +111,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self._combobox_alt = ui.Label("")
                         self._combobox_alt.visible = False
                         self._combobox = ComboboxModel(self._name, self._model, self._binding.get_source(),
-                                                       self._on_ndi_status_change, self._combobox_alt)
+                                                       self.on_ndi_status_change, self._combobox_alt)
                         self._combobox_ui = ui.ComboBox(self._combobox)
 
                         self.playPauseToolButton = ui.Button(text="", image_url=NDIBindingPanel.PLAY_ICON, height=30,
@@ -133,7 +132,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
         self._combobox.select_none()
         self.collapsed = True
 
-    def _on_click_play_ndi(self):
+    def _start_ndi(self):
         lowbandwidth = self._lowBandWidthButton.model.get_value_as_bool()
         if self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth):
             self._lowBandWidthButton.enabled = False
@@ -141,9 +140,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
             self._combobox_ui.visible = False
             self._combobox_alt.visible = True
             self._isPlaying = True
-
-    def _on_click_pause_ndi(self):
-        self._kill_stream()
+            self._toggle_play_pause_btn()
 
     def _kill_stream(self):
         self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
@@ -154,13 +151,15 @@ class NDIBindingPanel(ui.CollapsableFrame):
         self._combobox_alt.visible = False
         self._combobox_ui.visible = True
         self._isPlaying = False
+        self._toggle_play_pause_btn()
 
     def _on_click_play_pause_ndi(self):
         if self._isPlaying:
-            self._on_click_pause_ndi()
+            self._kill_stream()
         else:
-            self._on_click_play_ndi()
+            self._start_ndi()
 
+    def _toggle_play_pause_btn(self):
         self.playPauseToolButton.image_url = NDIBindingPanel.PAUSE_ICON if self._isPlaying else NDIBindingPanel.PLAY_ICON
 
     def on_ndi_status_change(self):
