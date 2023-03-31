@@ -25,11 +25,11 @@ The title is the name of your dynamic texture.
 
 - ☑️ Indicates the health of the video feed.
 - **NDI feed combobox** Select which NDI feed to use for this dynamic texture identifier. This value is saved in USD as a custom property in the shader under `ndi:source`
-- ⏸️ Allows to start/stop the video feed. 
+- ⏸️ Allows to start/stop the video feed.
 - 🖼️ Allows to switch the feed to Low bandwidth mode, saving performance by decreasing resolution for a particular feed.
 - 🗇 To copy to clipboard the identifiers of the dynamic texture Example `dynamic://myDynamicMaterial`
 
-## Application statup
+## Application startup
 
 ```
 $ ./link_app.bat --app create
@@ -38,7 +38,7 @@ $ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable 
 
 On simply search for this community extension within the Extension Window of Create
 
-You may want to use [example.usda](./example.usda) in Create for your first test. 
+You may want to use [example.usda](./example.usda) in Create for your first test.
 
 ## Resources
 - [kit-cv-video-example](https://github.com/jshrake-nvidia/kit-cv-video-example)
