@@ -41,7 +41,7 @@ class NDItools():
     def ndi_init(self):
         if not ndi.initialize():
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi")
+            logger.error("Could not initialize NDI®")
             return
         self._ndi_ok = True
 
@@ -50,7 +50,7 @@ class NDItools():
         if self._ndi_find is None:
             self._is_running = False
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi find")
+            logger.error("Could not initialize NDI® find")
             ndi.destroy()
             self._ndi_ok = False
             return
@@ -132,7 +132,7 @@ class NDIVideoStream():
         self._ndi_recv = ndi.recv_create_v3(recv_create_desc)
         if self._ndi_recv is None:
             logger = logging.getLogger(__name__)
-            logger.error("Could not create ndi receiver")
+            logger.error("Could not create NDI® receiver")
             return
 
         ndi.recv_connect(self._ndi_recv, source)

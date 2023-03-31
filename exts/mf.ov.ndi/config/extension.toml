@@ -10,7 +10,7 @@ changelog = "docs/CHANGELOG.md"
 repository = "https://github.com/MomentFactory/Omniverse-NDI-extension"
 
 category = "Services"
-keywords = ["NDI", "texture", "live-feed", "video", "broadcast", "audiovisual", "realtime"]
+keywords = ["NDI®", "texture", "live-feed", "video", "broadcast", "audiovisual", "realtime"]
 
 preview_image = "data/preview.png"
 icon = "data/icon.png"
