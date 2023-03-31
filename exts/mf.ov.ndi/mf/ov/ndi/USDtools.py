@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import logging
 import numpy as np
 import logging
+from unidecode import unidecode
 
 
 @dataclass
@@ -24,10 +25,10 @@ class USDtools():
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
 
-        safename = Tf.MakeValidIdentifier(name)
+        safename = Tf.MakeValidIdentifier(unidecode(name))
         if name != safename:
             logger = logging.getLogger(__name__)
-            logger.warn(f"Name \"{name}\" was not valid, changed it to \"{safename}\"")
+            logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
 
         material_path = f"/Looks/{safename}/Material"
         material: UsdShade.Material = UsdShade.Material.Define(stage, material_path)
