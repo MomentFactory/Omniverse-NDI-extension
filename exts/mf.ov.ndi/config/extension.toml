@@ -1,8 +1,8 @@
 [package]
 version = "0.8.1"
 
-title = "Omniverse NDI® extension"
-description = "Bring live video feeds as dynamic textures in your stages."
+title = "MF NDI® extension"
+description = "An extension to enable NDI® live video input in Omniverse."
 authors = ["Moment Factory","Frederic Lestage"]
 
 readme  = "docs/README.md"
@@ -10,10 +10,10 @@ changelog = "docs/CHANGELOG.md"
 repository = "https://github.com/MomentFactory/Omniverse-NDI-extension"
 
 category = "Services"
-keywords = ["NDI®", "texture", "live-feed", "video", "broadcast", "audiovisual", "realtime"]
+keywords = ["NDI®", "texture", "live-feed", "video", "broadcast", "audiovisual", "realtime","streaming","voip"]
 
 preview_image = "data/preview.png"
-icon = "data/icon.png"
+icon = "data/mf-ov-extensions-icons.png"
 
 [dependencies]
 "omni.kit.uiapp" = {}
