@@ -52,7 +52,7 @@ class NDIWindow(ui.Window):
             with ui.VStack():
                 bindings: NDIBinding = self._model.get_bindings()
                 if len(bindings) == 0:
-                    ui.Label("No dynamic materials found")
+                    ui.Label("No dynamic texture found")
                 else:
                     for binding in bindings:
                         self._bindingPanels.append(NDIBindingPanel(binding, self._model, self, height=0))
@@ -138,7 +138,6 @@ class NDIBindingPanel(ui.CollapsableFrame):
         if self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth):
             self._lowBandWidthButton.enabled = False
             self._lowBandWidthButton.model.set_value(lowbandwidth)
-            print(lowbandwidth)
             self._combobox_ui.visible = False
             self._combobox_alt.visible = True
             self._isPlaying = True
@@ -151,7 +150,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
         self.on_stream_stopped()
 
     def on_stream_stopped(self):
-        self.lowbandwidth.enabled = True
+        self._lowBandWidthButton.enabled = True
         self._combobox_alt.visible = False
         self._combobox_ui.visible = True
         self._isPlaying = False
