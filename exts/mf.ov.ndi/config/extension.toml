@@ -23,6 +23,7 @@ name = "mf.ov.ndi"
 
 [python.pipapi]
 requirements = [
-    "ndi-python"
+    "ndi-python",
+    "unidecode"
 ]
 use_online_index = true
