@@ -6,7 +6,7 @@ import omni.kit.app
 import asyncio
 
 
-class FredericlNdiExperimentationExtension(omni.ext.IExt):
+class MFOVNdiExtension(omni.ext.IExt):
     MENU_PATH = f"Window/{NDIWindow.WINDOW_NAME}"
 
     def on_startup(self, ext_id):
@@ -14,7 +14,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
             self._menu = editor_menu.add_item(
-                FredericlNdiExperimentationExtension.MENU_PATH, self.show_window, toggle=True, value=True
+                MFOVNdiExtension.MENU_PATH, self.show_window, toggle=True, value=True
             )
 
         # ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
@@ -30,7 +30,7 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
     def _set_menu(self, visible):
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
-            editor_menu.set_value(FredericlNdiExperimentationExtension.MENU_PATH, visible)
+            editor_menu.set_value(MFOVNdiExtension.MENU_PATH, visible)
 
     async def _destroy_window_async(self):
         await omni.kit.app.get_app().next_update_async()
