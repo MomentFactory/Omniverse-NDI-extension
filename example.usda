@@ -7,8 +7,8 @@
                 double radius = 500
             }
             dictionary Perspective = {
-                double3 position = (-0.0713092489795839, 51.01501168450141, 542.2366014082535)
-                double3 target = (-7.5901107720537855, -8.726656898874715, -134.38552079496083)
+                double3 position = (83.17940401698989, 1044.3144444268976, 4144.469143212094)
+                double3 target = (54.131303730017166, 696.4520152756534, -1154.3624507711083)
             }
             dictionary Right = {
                 double3 position = (-50000, 0, 0)
@@ -21,7 +21,6 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
-            string authoring_layer = "./benchmarks_2mat.usda"
             dictionary muteness = {
             }
         }
@@ -29,7 +28,6 @@
             float3 "rtx:debugView:pixelDebug:textColor" = (0, 1e18, 0)
             bool "rtx:ecoMode:enabled" = 0
             float3 "rtx:fog:fogColor" = (0.75, 0.75, 0.75)
-            bool "rtx:indirectDiffuse:enabled" = 1
             float3 "rtx:post:backgroundZeroAlpha:backgroundDefaultColor" = (0, 0, 0)
             float3 "rtx:post:colorcorr:contrast" = (1, 1, 1)
             float3 "rtx:post:colorcorr:gain" = (1, 1, 1)
@@ -48,14 +46,13 @@
             float3 "rtx:post:lensFlares:anisoFlareFalloffX" = (450, 475, 500)
             float3 "rtx:post:lensFlares:anisoFlareFalloffY" = (10, 10, 10)
             float3 "rtx:post:lensFlares:cutoffPoint" = (2, 2, 2)
-            double "rtx:post:lensFlares:flareScale" = 0.075
             float3 "rtx:post:lensFlares:haloFlareFalloff" = (10, 10, 10)
             float3 "rtx:post:lensFlares:haloFlareRadius" = (75, 75, 75)
             float3 "rtx:post:lensFlares:isotropicFlareFalloff" = (50, 50, 50)
             float3 "rtx:post:tonemap:whitepoint" = (1, 1, 1)
             float3 "rtx:raytracing:inscattering:singleScatteringAlbedo" = (0.9, 0.9, 0.9)
             float3 "rtx:raytracing:inscattering:transmittanceColor" = (0.5, 0.5, 0.5)
-            float3 "rtx:sceneDb:ambientLightColor" = (0, 0, 0)
+            float3 "rtx:sceneDb:ambientLightColor" = (0.1, 0.1, 0.1)
         }
     }
     defaultPrim = "World"
@@ -68,12 +65,47 @@
 
 def Xform "World"
 {
-    def Mesh "left_mesh"
+    def Scope "NDI_Looks"
+    {
+        def Material "left"
+        {
+            token outputs:surface.connect = </World/NDI_Looks/left/Shader.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:id = "OmniPBR"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                asset inputs:diffuse_texture = @dynamic://left@
+                custom string ndi:source = "MY-PC (Test Pattern)"
+                token outputs:surface
+            }
+        }
+
+        def Material "right"
+        {
+            token outputs:surface.connect = </World/NDI_Looks/right/Shader.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:id = "OmniPBR"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                asset inputs:diffuse_texture = @dynamic://right@
+                custom string ndi:source = "MY-PC (Test Pattern 2)"
+                token outputs:surface
+            }
+        }
+    }
+
+    def Mesh "left_billboard"
     {
         float3[] extent = [(-50, 0, -50), (50, 0, 50)]
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 2, 3, 1]
-        rel material:binding = </Looks/left_mat/Material> (
+        rel material:binding = </World/NDI_Looks/left> (
             bindMaterialAs = "weakerThanDescendants"
         )
         normal3f[] normals = [(0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0)] (
@@ -85,17 +117,17 @@ def Xform "World"
         )
         uniform token subdivisionScheme = "none"
         double3 xformOp:rotateXYZ = (-90, 0, 0)
-        double3 xformOp:scale = (1.92, 1, 1.08)
-        double3 xformOp:translate = (-100, 0, 0)
+        double3 xformOp:scale = (19.2, 1, 10.8)
+        double3 xformOp:translate = (-1100, 600, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
-    def Mesh "right_mesh"
+    def Mesh "right_billboard"
     {
         float3[] extent = [(-50, 0, -50), (50, 0, 50)]
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 2, 3, 1]
-        rel material:binding = </Looks/right_mat/Material> (
+        rel material:binding = </World/NDI_Looks/right> (
             bindMaterialAs = "weakerThanDescendants"
         )
         normal3f[] normals = [(0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0)] (
@@ -107,117 +139,34 @@ def Xform "World"
         )
         uniform token subdivisionScheme = "none"
         double3 xformOp:rotateXYZ = (-90, 0, 0)
-        double3 xformOp:scale = (1.92, 1, 1.08)
-        double3 xformOp:translate = (100, 0, 0)
+        double3 xformOp:scale = (19.2, 1, 10.8)
+        double3 xformOp:translate = (1100, 600, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 }
 
 def Xform "Environment"
 {
-    int ground:size = 1400
-    string ground:type = "On"
     double3 xformOp:rotateXYZ = (0, 0, 0)
     double3 xformOp:scale = (1, 1, 1)
     double3 xformOp:translate = (0, 0, 0)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
 
-    def DomeLight "Sky" (
+    def DistantLight "defaultLight" (
         prepend apiSchemas = ["ShapingAPI"]
     )
     {
-        float colorTemperature = 6250
-        bool enableColorTemperature = 1
-        float exposure = 9
-        float intensity = 1
+        float angle = 1
+        float intensity = 3000
         float shaping:cone:angle = 180
         float shaping:cone:softness
         float shaping:focus
         color3f shaping:focusTint
         asset shaping:ies:file
-        asset texture:file = @https://omniverse-content-production.s3.us-west-2.amazonaws.com/Assets/Scenes/Templates/Default/SubUSDs/textures/CarLight_512x256.hdr@
-        token texture:format = "latlong"
-        token visibility = "inherited"
-        double3 xformOp:rotateXYZ = (-90, 0, 0)
+        double3 xformOp:rotateXYZ = (315, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:translate = (0, 305, 0)
+        double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
-    }
-
-    def DistantLight "DistantLight" (
-        prepend apiSchemas = ["ShapingAPI"]
-    )
-    {
-        float angle = 2.5
-        float colorTemperature = 7250
-        bool enableColorTemperature = 1
-        float exposure = 10
-        float intensity = 1
-        float shaping:cone:angle = 180
-        float shaping:cone:softness
-        float shaping:focus
-        color3f shaping:focusTint
-        asset shaping:ies:file
-        token visibility = "inherited"
-        double3 xformOp:rotateXYZ = (-90, 0, -15)
-        double3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:translate = (0, 305, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
-    }
-}
-
-def "Looks"
-{
-    def "left_mat"
-    {
-        def Material "Material"
-        {
-            token outputs:surface.connect = </Looks/left_mat/Material/Shader.outputs:surface>
-
-            def Shader "Shader"
-            {
-                uniform token info:id = "OmniPBR"
-                uniform token info:implementationSource = "sourceAsset"
-                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
-                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                asset inputs:diffuse_texture = @dynamic://dynamic_left@ (
-                    customData = {
-                        asset default = @@
-                    }
-                    displayGroup = "Albedo"
-                    displayName = "Albedo Map"
-                    hidden = false
-                )
-                custom string ndi:source = "MY-PC (Test Pattern)"
-                token outputs:surface
-            }
-        }
-    }
-
-    def "right_mat"
-    {
-        def Material "Material"
-        {
-            token outputs:surface.connect = </Looks/right_mat/Material/Shader.outputs:surface>
-
-            def Shader "Shader"
-            {
-                uniform token info:id = "OmniPBR"
-                uniform token info:implementationSource = "sourceAsset"
-                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
-                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                asset inputs:diffuse_texture = @dynamic://dynamic_right@ (
-                    customData = {
-                        asset default = @@
-                    }
-                    displayGroup = "Albedo"
-                    displayName = "Albedo Map"
-                    hidden = false
-                )
-                custom string ndi:source = "MY-PC (Test Pattern 2)"
-                token outputs:surface
-            }
-        }
     }
 }
 
