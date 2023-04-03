@@ -25,7 +25,6 @@ class USDtools():
         stage: Usd.Stage = usd_context.get_stage()
 
         scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/Looks"
-        print(scope_path)
         UsdGeom.Scope.Define(stage, scope_path)
 
         safename = Tf.MakeValidIdentifier(unidecode(name))
