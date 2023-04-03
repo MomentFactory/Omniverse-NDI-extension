@@ -47,5 +47,5 @@ You may want to use [example.usda](./example.usda) in Create for your first test
 
 ## Known issues
 
-- Currently implemented with Python, performance could be greatly improved with C++
+- Currently implemented with Python, performance could be greatly improved with C++ (but limited by DynamicTextureProvider implementation)
 - You can ignore warnings in the form of `[Warning] [omni.hydra] Material parameter '...' was assigned to incompatible texture: '...'`
