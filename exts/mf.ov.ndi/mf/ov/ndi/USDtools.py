@@ -24,7 +24,7 @@ class USDtools():
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
 
-        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/Looks"
+        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/NDI_Looks"
         UsdGeom.Scope.Define(stage, scope_path)
 
         safename = Tf.MakeValidIdentifier(unidecode(name))
