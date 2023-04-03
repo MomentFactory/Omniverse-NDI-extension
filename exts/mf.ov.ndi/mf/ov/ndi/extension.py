@@ -1,6 +1,4 @@
 from .window import NDIWindow
-# import omni.ui as ui
-# from functools import partial
 import omni.ext
 import omni.kit.app
 import asyncio
@@ -10,14 +8,12 @@ class MFOVNdiExtension(omni.ext.IExt):
     MENU_PATH = f"Window/{NDIWindow.WINDOW_NAME}"
 
     def on_startup(self, ext_id):
-        # ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, partial(self.show_window, None))
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
             self._menu = editor_menu.add_item(
                 MFOVNdiExtension.MENU_PATH, self.show_window, toggle=True, value=True
             )
 
-        # ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
         self.show_window(None, True)
 
     def on_shutdown(self):
@@ -25,7 +21,6 @@ class MFOVNdiExtension(omni.ext.IExt):
         if self._window:
             self._window.destroy()
             self._window = None
-        # ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, None)
 
     def _set_menu(self, visible):
         editor_menu = omni.kit.ui.get_editor_menu()
