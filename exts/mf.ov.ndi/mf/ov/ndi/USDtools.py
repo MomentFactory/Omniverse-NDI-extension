@@ -4,7 +4,6 @@ from pxr import Usd, UsdShade, Sdf, UsdLux, Tf
 from dataclasses import dataclass
 import logging
 import numpy as np
-import logging
 from unidecode import unidecode
 
 
