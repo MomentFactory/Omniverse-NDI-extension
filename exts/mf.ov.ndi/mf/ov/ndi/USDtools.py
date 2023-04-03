@@ -1,6 +1,6 @@
 import omni.ext
 from typing import List
-from pxr import Usd, UsdShade, Sdf, UsdLux, Tf
+from pxr import Usd, UsdGeom, UsdShade, Sdf, UsdLux, Tf
 from dataclasses import dataclass
 import logging
 import numpy as np
@@ -24,12 +24,16 @@ class USDtools():
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
 
+        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/Looks"
+        print(scope_path)
+        UsdGeom.Scope.Define(stage, scope_path)
+
         safename = Tf.MakeValidIdentifier(unidecode(name))
         if name != safename:
             logger = logging.getLogger(__name__)
             logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
 
-        material_path = f"/Looks/{safename}/Material"
+        material_path = f"{scope_path}/{safename}"
         material: UsdShade.Material = UsdShade.Material.Define(stage, material_path)
         shader: UsdShade.Shader = UsdShade.Shader.Define(stage, f"{material_path}/Shader")
         shader.SetSourceAsset("OmniPBR.mdl", "mdl")
