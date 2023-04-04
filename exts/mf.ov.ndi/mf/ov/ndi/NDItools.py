@@ -41,7 +41,7 @@ class NDItools():
     def ndi_init(self):
         if not ndi.initialize():
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi")
+            logger.error("Could not initialize NDI®")
             return
         self._ndi_ok = True
 
@@ -50,7 +50,7 @@ class NDItools():
         if self._ndi_find is None:
             self._is_running = False
             logger = logging.getLogger(__name__)
-            logger.error("Could not initialize ndi find")
+            logger.error("Could not initialize NDI® find")
             ndi.destroy()
             self._ndi_ok = False
             return
@@ -132,7 +132,7 @@ class NDIVideoStream():
         self._ndi_recv = ndi.recv_create_v3(recv_create_desc)
         if self._ndi_recv is None:
             logger = logging.getLogger(__name__)
-            logger.error("Could not create ndi receiver")
+            logger.error("Could not create NDI® receiver")
             return
 
         ndi.recv_connect(self._ndi_recv, source)
@@ -152,7 +152,7 @@ class NDIVideoStream():
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
         recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
-        # defaults to BANDWIDTH_HIGHEST
+        recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_HIGHEST
         return recv_create_desc
 
     def get_recv_low_bandwidth(self):
@@ -190,7 +190,7 @@ class NDIVideoStream():
                 fps = v.frame_rate_N / v.frame_rate_D
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
                 frame = v.data
-                frame[..., :3] = frame[..., 2::-1]  # BGRA to RGBA (Could be done in shader?)
+                frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
                 dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
@@ -205,6 +205,7 @@ class NDIVideoStream():
 
             carb.profiler.end(2)
             carb.profiler.end(1)
+
 
 class NDIVideoStreamProxy():
     def __init__(self, name: str, stream_uri: str, fps: float, lowbandwidth: bool):
@@ -237,7 +238,7 @@ class NDIVideoStreamProxy():
         dynamic_texture = omni.ui.DynamicTextureProvider(name)
         frame = np.full((height, width, channels), color, dtype=np.uint8)
 
-        last_read = time.time() - 1  # Make sure we run on the first frame
+        last_read = time.time() - 1
         carb.profiler.end(0)
         while self._is_running:
             carb.profiler.begin(1, 'Omniverse NDI®::Proxy loop outer')
