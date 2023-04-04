@@ -27,3 +27,8 @@ requirements = [
     "unidecode"
 ]
 use_online_index = true
+
+[[test]]
+dependencies = [
+    "omni.kit.ui_test"
+]
