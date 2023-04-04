@@ -1,23 +1,19 @@
 from .window import NDIWindow
-# import omni.ui as ui
-# from functools import partial
 import omni.ext
 import omni.kit.app
 import asyncio
 
 
-class FredericlNdiExperimentationExtension(omni.ext.IExt):
+class MFOVNdiExtension(omni.ext.IExt):
     MENU_PATH = f"Window/{NDIWindow.WINDOW_NAME}"
 
     def on_startup(self, ext_id):
-        # ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, partial(self.show_window, None))
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
             self._menu = editor_menu.add_item(
-                FredericlNdiExperimentationExtension.MENU_PATH, self.show_window, toggle=True, value=True
+                MFOVNdiExtension.MENU_PATH, self.show_window, toggle=True, value=True
             )
 
-        # ui.Workspace.show_window(NDIWindow.WINDOW_NAME)
         self.show_window(None, True)
 
     def on_shutdown(self):
@@ -25,12 +21,11 @@ class FredericlNdiExperimentationExtension(omni.ext.IExt):
         if self._window:
             self._window.destroy()
             self._window = None
-        # ui.Workspace.set_show_window_fn(NDIWindow.WINDOW_NAME, None)
 
     def _set_menu(self, visible):
         editor_menu = omni.kit.ui.get_editor_menu()
         if editor_menu:
-            editor_menu.set_value(FredericlNdiExperimentationExtension.MENU_PATH, visible)
+            editor_menu.set_value(MFOVNdiExtension.MENU_PATH, visible)
 
     async def _destroy_window_async(self):
         await omni.kit.app.get_app().next_update_async()
