@@ -208,9 +208,9 @@ class NDIModel():
         self._push_ndi_to_combobox()
 
     def _apply_ndi_feeds(self, others: List[str]):
-        previous_sources =  [feed.get_source() for feed in self._ndi_feeds
-                             if feed.get_source() is not ComboboxModel.NONE_VALUE
-                             and feed.get_source() is not ComboboxModel.PROXY_VALUE]
+        previous_sources = [feed.get_source() for feed in self._ndi_feeds
+                            if feed.get_source() is not ComboboxModel.NONE_VALUE
+                            and feed.get_source() is not ComboboxModel.PROXY_VALUE]
         new_sources = set(others) - set(previous_sources)
         sources_inactive = set(previous_sources) - set(others)
         sources_active = set(others) & set(previous_sources)
@@ -229,10 +229,6 @@ class NDIModel():
                 found.set_active(True)
 
         self._push_ndi_to_combobox()
-
-    # def force_search_for_ndi_feeds(self):
-    #    if self._ndi_finder:
-    #        self._ndi_finder.force_search()
 
     def _reset_ndi_feeds(self):
         self._ndi_feeds = [NDItools.NONE_DATA, NDItools.PROXY_DATA]

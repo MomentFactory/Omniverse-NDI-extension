@@ -39,8 +39,6 @@ class NDIWindow(ui.Window):
             ui.Button("Create Dynamic Texture", image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
         with ui.HStack(height=0):
-            # ui.Button("Refresh NDI feeds", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
-            #          style=button_style, clicked_fn=self._on_click_refresh_ndi)
             ui.Button("Discover Dynamic Textures", image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
             ui.Button("Stop all streams", clicked_fn=self._kill_all_streams)

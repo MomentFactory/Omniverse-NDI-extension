@@ -46,7 +46,6 @@ class USDtools():
         height, width, channels = frame.shape
         dynamic_texture = omni.ui.DynamicTextureProvider(safename)
         dynamic_texture.set_data_array(frame, [width, height, channels])
-        # dynamic_texture.set_bytes_data(frame.flatten().tolist(), [1, 1], omni.ui.TextureFormat.RGBA8_UNORM)
 
         return material
 
