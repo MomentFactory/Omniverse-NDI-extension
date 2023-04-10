@@ -14,7 +14,7 @@ class USDUnitTest(omni.kit.test.AsyncTestCase):
         self.check_name_valid("ùûúüÙÛÚÜ", "uuuuUUUU")
         self.check_name_valid("æœÆŒçÇ°ðÐñÑýÝþÞÿß", "aeoeAEOEcCdegdDnNyYthThyss")
         self.check_name_valid("!¡¿@#$%?&*()-_=+/`^~.,'\\<>`;:¤{}[]|\"¦¨«»¬¯±´·¸÷",
-                              "____________________________________________________")
+                              "___________________________________________________")
         self.check_name_valid("¢£¥§©ªº®¹²³µ¶¼½¾×", "C_PSY_SS_c_ao_r_123uP_1_4_1_2_3_4x")
 
     def check_name_valid(self, source, expected):
