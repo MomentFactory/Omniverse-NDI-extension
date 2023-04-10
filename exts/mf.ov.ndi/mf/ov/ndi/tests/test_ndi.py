@@ -4,14 +4,17 @@ import mf.ov.ndi
 
 
 class Test(omni.kit.test.AsyncTestCase):
-    # async def setUpClass(self):
-    #    pass
+    def setUpClass():
+        pass
 
-    # async def tearDownClass(self):
-    #    pass
+    def tearDownClass():
+        pass
 
     async def setUp(self):
         pass
 
     async def tearDown(self):
         pass
+
+    async def test_dummy(self):
+        self.assertTrue(True)

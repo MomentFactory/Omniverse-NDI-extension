@@ -29,6 +29,12 @@ requirements = [
 use_online_index = true
 
 [[test]]
-dependencies = [
-    "omni.kit.ui_test"
+args = [
+    "--/app/window/dpiScaleOverride=1.0",
+    "--/app/window/scaleToMonitor=false"
 ]
+dependencies = [
+    "omni.kit.ui_test",
+    "omni.usd"
+]
+timeout = 60
