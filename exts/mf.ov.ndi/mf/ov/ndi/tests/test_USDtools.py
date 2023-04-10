@@ -1,8 +1,12 @@
 import omni.kit.test
 import mf.ov.ndi as ext
+from pxr import UsdLux
 
 
-class USDUnitTest(omni.kit.test.AsyncTestCase):
+SOURCE = "MY-PC (Test Pattern)"
+
+
+class USDValidNameUnitTest(omni.kit.test.AsyncTestCase):
     async def test_name_valid(self):
         self.check_name_valid("myDynamicMaterial", "myDynamicMaterial")
         self.check_name_valid("789testing123numbers456", "_89testing123numbers456")
@@ -20,3 +24,52 @@ class USDUnitTest(omni.kit.test.AsyncTestCase):
     def check_name_valid(self, source, expected):
         v: str = ext.USDtools.make_name_valid(source)
         self.assertEqual(v, expected, f"Expected \"{v}\", derived from \"{source}\", to equals \"{expected}\"")
+
+
+class USDToolsUnitTest(omni.kit.test.AsyncTestCase):
+    def setUp(self):
+        usd_context = omni.usd.get_context()
+        usd_context.new_stage()
+        # self._stage = Usd.Stage.CreateInMemory()
+
+        self._stage = ext.USDtools.get_stage()
+        prim = self._stage.DefinePrim("/World")
+        self._stage.SetDefaultPrim(prim)
+
+    def tearDown(self):
+        usd_context = omni.usd.get_context()
+        usd_context.close_stage()
+
+    async def test_create_dynamic_material(self):
+        material = ext.USDtools.create_dynamic_material("myDynamicMaterial")
+        prim = self._stage.GetPrimAtPath(material.GetPath())
+        self.assertIsNotNone(prim)
+
+    async def test_find_dynamic_sources(self):
+        ext.USDtools.create_dynamic_material("myDynamicMaterial1")
+
+        path: str = f"{self._stage.GetDefaultPrim().GetPath()}/myRectLight"
+        light = UsdLux.RectLight.Define(self._stage, path)
+        light.GetPrim().GetAttribute("texture:file").Set(f"{ext.USDtools.PREFIX}/myDynamicMaterial2")
+
+        sources = ext.USDtools.find_all_dynamic_sources()
+        self.assertEqual(len(sources), 2)
+
+    async def test_set_property_ndi(self):
+        material = ext.USDtools.create_dynamic_material("myDynamicMaterial")
+        path = material.GetPath()
+        ext.USDtools.set_prim_ndi_attribute(path, SOURCE)
+
+        attr = material.GetPrim().GetAttribute(ext.USDtools.ATTR_NDI_NAME)
+        self.assertEqual(attr.Get(), SOURCE)
+
+    async def test_set_property_bandwidth(self):
+        material = ext.USDtools.create_dynamic_material("myDynamicMaterial")
+        path = material.GetPath()
+        ext.USDtools.set_prim_bandwidth_attribute(path, True)
+
+        attr = material.GetPrim().GetAttribute(ext.USDtools.ATTR_BANDWIDTH_NAME)
+        self.assertTrue(attr.Get())
+
+        ext.USDtools.set_prim_bandwidth_attribute(path, False)
+        self.assertFalse(attr.Get())
