@@ -3,7 +3,7 @@ import omni.kit.ui_test as ui_test
 import mf.ov.ndi as ext
 
 
-class Test(omni.kit.test.AsyncTestCase):
+class USDUnitTest(omni.kit.test.AsyncTestCase):
     def setUpClass():
         pass
 
