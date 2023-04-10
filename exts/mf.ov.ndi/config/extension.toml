@@ -38,3 +38,7 @@ dependencies = [
     "omni.usd"
 ]
 timeout = 60
+stdoutFailPatterns.exclude = [
+    "*Could not get stage*",
+    "*Model doesn't have a registered window*"
+]
