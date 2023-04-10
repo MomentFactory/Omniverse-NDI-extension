@@ -1,21 +1,8 @@
 import omni.kit.test
-import omni.kit.ui_test as ui_test
 import mf.ov.ndi as ext
 
 
 class USDUnitTest(omni.kit.test.AsyncTestCase):
-    def setUpClass():
-        pass
-
-    def tearDownClass():
-        pass
-
-    async def setUp(self):
-        pass
-
-    async def tearDown(self):
-        pass
-
     async def test_name_valid(self):
         self.check_name_valid("myDynamicMaterial", "myDynamicMaterial")
         self.check_name_valid("789testing123numbers456", "_89testing123numbers456")
