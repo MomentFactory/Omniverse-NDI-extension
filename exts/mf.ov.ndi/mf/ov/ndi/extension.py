@@ -1,4 +1,5 @@
 from .window import NDIWindow
+from .USDtools import USDtools
 import omni.ext
 import omni.kit.app
 import asyncio

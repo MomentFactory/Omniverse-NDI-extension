@@ -20,6 +20,9 @@ class USDtools():
     ATTR_BANDWIDTH_NAME = "ndi:lowbandwidth"
     PREFIX = "dynamic://"
 
+    def make_name_valid(name: str) -> str:
+        return Tf.MakeValidIdentifier(unidecode(name))
+
     def create_dynamic_material(name: str) -> UsdShade.Material:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
@@ -27,7 +30,7 @@ class USDtools():
         scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/NDI_Looks"
         UsdGeom.Scope.Define(stage, scope_path)
 
-        safename = Tf.MakeValidIdentifier(unidecode(name))
+        safename = USDtools.make_name_valid(name)
         if name != safename:
             logger = logging.getLogger(__name__)
             logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
