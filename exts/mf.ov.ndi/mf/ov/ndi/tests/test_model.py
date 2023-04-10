@@ -86,6 +86,7 @@ class ModelUnitTest(omni.kit.test.AsyncTestCase):
         self._model.remove_stream(DYNAMIC_ID2, ext.ComboboxModel.PROXY_VALUE)
         self.assertEqual(len(self._model._streams), streams_length - 2)
 
+
 """
     async def test_add_stream(self):
         model = ext.NDIModel(None)
