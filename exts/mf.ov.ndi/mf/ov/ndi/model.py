@@ -95,7 +95,6 @@ class NDIModel():
 
 # region streams
     def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
-        # TODO: Stop the possibility of adding 2 streams with the same name
         if uri == ComboboxModel.NONE_VALUE:
             logger = logging.getLogger(__name__)
             logger.warning("Won't create stream without NDI® source")
@@ -119,17 +118,10 @@ class NDIModel():
         return True
 
     def kill_all_streams(self):
-        self._kill_all_streams_window()
+        self._window.on_kill_all_streams()
         for stream in self._streams:
             stream.destroy()
         self._streams = []
-
-    def _kill_all_streams_window(self):
-        if self._window:
-            self._window.on_kill_all_streams()
-        else:
-            logger = logging.getLogger(__name__)
-            logger.error("Model doesn't have a registered window")
 
     def remove_stream(self, name: str, uri: str):
         stream: NDIVideoStream = next((x for x in self._streams if x.name == name and x.uri == uri), None)
