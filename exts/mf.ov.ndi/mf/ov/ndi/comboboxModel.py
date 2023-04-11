@@ -18,6 +18,7 @@ class ComboboxItem(ui.AbstractItem):
 class ComboboxModel(ui.AbstractItemModel):
     NONE_VALUE = "NONE"
     PROXY_VALUE = "PROXY (1080p30) - RED"
+    RUNNING_LABEL_SUFFIX = " - running"
     items: List[ComboboxItem] = []
     watchers = []
 
@@ -65,7 +66,7 @@ class ComboboxModel(ui.AbstractItemModel):
         self.set_alt_value()
 
     def set_alt_value(self):
-        self._combobox_alt.text = self.currentvalue() + " - running"
+        self._combobox_alt.text = self.currentvalue() + ComboboxModel.RUNNING_LABEL_SUFFIX
 
     def currentvalue(self):
         self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]

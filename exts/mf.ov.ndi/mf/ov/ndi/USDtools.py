@@ -19,6 +19,7 @@ class USDtools():
     ATTR_NDI_NAME = 'ndi:source'
     ATTR_BANDWIDTH_NAME = "ndi:lowbandwidth"
     PREFIX = "dynamic://"
+    SCOPE_NAME = "NDI_Looks"
 
     def get_stage() -> Usd.Stage:
         usd_context = omni.usd.get_context()
@@ -34,7 +35,7 @@ class USDtools():
             logger.error("Could not get stage")
             return
 
-        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/NDI_Looks"
+        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/{USDtools.SCOPE_NAME}"
         UsdGeom.Scope.Define(stage, scope_path)
 
         safename = USDtools.make_name_valid(name)

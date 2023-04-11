@@ -1,6 +1,7 @@
 import omni.kit.test
+from ..window import NDIWindow
 from .test_utils import (make_stage, close_stage, get_window, DYNAMIC_ID1, DYNAMIC_ID2, create_dynamic_material,
-                         create_dynamic_rectlight, refresh_dynamic_list)
+                         create_dynamic_rectlight, refresh_dynamic_list, get_dynamic_material_prim)
 
 
 class UITestsHeader(omni.kit.test.AsyncTestCase):
@@ -16,10 +17,10 @@ class UITestsHeader(omni.kit.test.AsyncTestCase):
         field.widget.model.set_value(DYNAMIC_ID1)
         self.assertEqual(field.widget.model.get_value_as_string(), DYNAMIC_ID1)
 
-        button = self._window.find("**/Button[*].text=='Create Dynamic Texture'")
+        button = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
 
-        prim = self._stage.GetPrimAtPath(f"{self._stage.GetDefaultPrim().GetPath()}/NDI_Looks/{DYNAMIC_ID1}")
+        prim = get_dynamic_material_prim(DYNAMIC_ID1)
         self.assertTrue(prim.IsValid)
 
     async def test_texture_discovery(self):
@@ -60,7 +61,7 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
         self.assertIsNone(panel)
 
         label = self._window.find("**/Label[*]")
-        self.assertEqual(label.widget.text, "No dynamic texture found")
+        self.assertEqual(label.widget.text, NDIWindow.EMPTY_TEXTURE_LIST_TXT)
 
 
 """
