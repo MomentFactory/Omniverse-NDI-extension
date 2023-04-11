@@ -59,3 +59,24 @@ class UITestsHeader(omni.kit.test.AsyncTestCase):
 
         self.assertTrue(panel1_found)
         self.assertTrue(panel2_found)
+
+
+class UITestsPanel(omni.kit.test.AsyncTestCase):
+    async def test_no_panel_on_start(self):
+        window = ui_test.find(NDIWindow.WINDOW_NAME)
+        panel = window.find("**/NDIBindingPanel[*]")
+        self.assertIsNone(panel)
+
+        label = window.find("**/Label[*]")
+        self.assertEqual(label.widget.text, "No dynamic texture found")
+
+
+"""
+    async def test_combobox(self):
+        self._make
+        window = ui_test.find(NDIWindow.WINDOW_NAME)
+        button = window.find("**/Button[*].text=='Create Dynamic Texture'")
+        await button.click()
+
+        combobox = window.find("**/ComboBox[*]")
+"""
