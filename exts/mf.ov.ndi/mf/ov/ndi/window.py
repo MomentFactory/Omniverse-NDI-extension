@@ -124,6 +124,7 @@ class NDIBindingPanel(ui.CollapsableFrame):
                                                                  clicked_fn=self._set_low_bandwidth_value)
                         ui.Button("", image_url=NDIBindingPanel.COPY_ICON, width=30, height=30,
                                   clicked_fn=self._on_click_copy, tooltip="Copy dynamic texture path(dynamic://*)")
+                        self._set_ndi_status_icon(self._combobox.is_active())
 
     def _set_low_bandwidth_value(self):
         self._binding.set_lowbandwidth(not self._binding.get_lowbandwidth())
@@ -167,8 +168,12 @@ class NDIBindingPanel(ui.CollapsableFrame):
 
     def on_ndi_status_change(self):
         status = self._binding.get_ndi_status()
-        if status:
+        self._set_ndi_status_icon(status)
+        if not status:
+            self._kill_stream()
+
+    def _set_ndi_status_icon(self, active: bool):
+        if active:
             self._status_icon.source_url = NDIBindingPanel.NDI_ACTIVE
         else:
             self._status_icon.source_url = NDIBindingPanel.NDI_INACTIVE
-            self._kill_stream()
