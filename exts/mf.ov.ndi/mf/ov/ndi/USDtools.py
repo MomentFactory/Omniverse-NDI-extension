@@ -19,12 +19,13 @@ class USDtools():
     ATTR_NDI_NAME = 'ndi:source'
     ATTR_BANDWIDTH_NAME = "ndi:lowbandwidth"
     PREFIX = "dynamic://"
+    SCOPE_NAME = "NDI_Looks"
 
     def create_dynamic_material(name: str) -> UsdShade.Material:
         usd_context = omni.usd.get_context()
         stage: Usd.Stage = usd_context.get_stage()
 
-        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/NDI_Looks"
+        scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/{USDtools.SCOPE_NAME}"
         UsdGeom.Scope.Define(stage, scope_path)
 
         safename = Tf.MakeValidIdentifier(unidecode(name))
