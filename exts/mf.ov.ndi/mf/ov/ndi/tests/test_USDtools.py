@@ -1,9 +1,6 @@
 import omni.kit.test
 from ..USDtools import USDtools
-from pxr import UsdLux
-
-
-SOURCE = "MY-PC (Test Pattern)"
+from .test_utils import make_stage, close_stage, create_dynamic_material, create_dynamic_rectlight, SOURCE1
 
 
 class USDValidNameUnitTest(omni.kit.test.AsyncTestCase):
@@ -28,43 +25,33 @@ class USDValidNameUnitTest(omni.kit.test.AsyncTestCase):
 
 class USDToolsUnitTest(omni.kit.test.AsyncTestCase):
     def setUp(self):
-        usd_context = omni.usd.get_context()
-        usd_context.new_stage()
-        # self._stage = Usd.Stage.CreateInMemory()
-
-        self._stage = USDtools.get_stage()
-        prim = self._stage.DefinePrim("/World")
-        self._stage.SetDefaultPrim(prim)
+        self._stage = make_stage()
 
     def tearDown(self):
-        usd_context = omni.usd.get_context()
-        usd_context.close_stage()
+        close_stage()
 
     async def test_create_dynamic_material(self):
-        material = USDtools.create_dynamic_material("myDynamicMaterial")
+        material = create_dynamic_material()
         prim = self._stage.GetPrimAtPath(material.GetPath())
         self.assertIsNotNone(prim)
 
     async def test_find_dynamic_sources(self):
-        USDtools.create_dynamic_material("myDynamicMaterial1")
-
-        path: str = f"{self._stage.GetDefaultPrim().GetPath()}/myRectLight"
-        light = UsdLux.RectLight.Define(self._stage, path)
-        light.GetPrim().GetAttribute("texture:file").Set(f"{USDtools.PREFIX}/myDynamicMaterial2")
+        create_dynamic_material()
+        create_dynamic_rectlight()
 
         sources = USDtools.find_all_dynamic_sources()
         self.assertEqual(len(sources), 2)
 
     async def test_set_property_ndi(self):
-        material = USDtools.create_dynamic_material("myDynamicMaterial")
+        material = create_dynamic_material()
         path = material.GetPath()
-        USDtools.set_prim_ndi_attribute(path, SOURCE)
+        USDtools.set_prim_ndi_attribute(path, SOURCE1)
 
         attr = material.GetPrim().GetAttribute(USDtools.ATTR_NDI_NAME)
-        self.assertEqual(attr.Get(), SOURCE)
+        self.assertEqual(attr.Get(), SOURCE1)
 
     async def test_set_property_bandwidth(self):
-        material = USDtools.create_dynamic_material("myDynamicMaterial")
+        material = create_dynamic_material()
         path = material.GetPath()
         USDtools.set_prim_bandwidth_attribute(path, True)
 
