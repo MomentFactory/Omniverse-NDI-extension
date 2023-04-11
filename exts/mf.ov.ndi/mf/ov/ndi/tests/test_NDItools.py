@@ -1,5 +1,5 @@
 import omni.kit.test
-import mf.ov.ndi as ext
+from ..NDItools import NDIData
 
 
 SOURCE = "MY-PC (Test Pattern)"
@@ -7,17 +7,17 @@ SOURCE = "MY-PC (Test Pattern)"
 
 class NDIDataUnitTest(omni.kit.test.AsyncTestCase):
     async def test_source(self):
-        data = ext.NDIData(SOURCE, False)
+        data = NDIData(SOURCE, False)
         self.assertEqual(data.get_source(), SOURCE)
 
     async def test_active(self):
-        data = ext.NDIData(SOURCE)
+        data = NDIData(SOURCE)
         self.assertFalse(data.is_active())
 
-        data = ext.NDIData(SOURCE, False)
+        data = NDIData(SOURCE, False)
         self.assertFalse(data.is_active())
 
-        data = ext.NDIData(SOURCE, True)
+        data = NDIData(SOURCE, True)
         self.assertTrue(data.is_active())
 
         data.set_active(False)
