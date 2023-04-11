@@ -72,13 +72,6 @@ class ComboboxModel(ui.AbstractItemModel):
         self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
         return self._current_item.value()
 
-    def currentItem(self):
-        self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
-        return self._current_item
-
-    def getCurrentItemIndex(self):
-        return self._current_index.get_value_as_int()
-
     def get_item_children(self, item):
         return ComboboxModel.items
 
@@ -86,9 +79,6 @@ class ComboboxModel(ui.AbstractItemModel):
         if item is None:
             return self._current_index
         return item.model
-
-    def append_child_item(self, parentItem, text):
-        ComboboxModel.AddItem(text)
 
     def select_none(self):
         self._current_index.set_value(0)
