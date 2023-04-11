@@ -69,8 +69,8 @@ class ComboboxModel(ui.AbstractItemModel):
         self._combobox_alt.text = self.currentvalue() + ComboboxModel.RUNNING_LABEL_SUFFIX
 
     def currentvalue(self):
-        self._current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
-        return self._current_item.value()
+        current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
+        return current_item.value()
 
     def get_item_children(self, item):
         return ComboboxModel.items
@@ -82,3 +82,7 @@ class ComboboxModel(ui.AbstractItemModel):
 
     def select_none(self):
         self._current_index.set_value(0)
+
+    def is_active(self):
+        current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
+        return current_item.is_active()
