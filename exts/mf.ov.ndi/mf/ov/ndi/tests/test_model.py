@@ -3,19 +3,13 @@ from ..NDItools import NDIData
 from ..model import NDIBinding, NDIModel
 from ..USDtools import USDtools
 from ..comboboxModel import ComboboxModel
-
-
-SOURCE1 = "MY-PC (Test Pattern)"
-SOURCE2 = "MY-PC (Test Pattern 2)"
-DYNAMIC_ID1 = "myDynamicMaterial1"
-DYNAMIC_ID2 = "myDynamicMaterial2"
-PATH = "/path/to/dummy"
+from .test_utils import SOURCE1, SOURCE2, DYNAMIC_ID1, DYNAMIC_ID2, DUMMY_PATH
 
 
 class NDIBindingsUnitTest(omni.kit.test.AsyncTestCase):
     async def test_dynamic_id(self):
         ndi_data = NDIData(SOURCE1)
-        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, PATH, False)
+        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, DUMMY_PATH, False)
 
         self.assertEqual(ndi_binding.get_id(), DYNAMIC_ID1)
         self.assertEqual(ndi_binding.get_id_full(), USDtools.PREFIX + DYNAMIC_ID1)
@@ -24,7 +18,7 @@ class NDIBindingsUnitTest(omni.kit.test.AsyncTestCase):
         ndi_data1 = NDIData(SOURCE1)
         ndi_data2 = NDIData(SOURCE2)
 
-        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data1, PATH, False)
+        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data1, DUMMY_PATH, False)
         self.assertEqual(ndi_binding.get_source(), SOURCE1)
 
         ndi_binding.set_ndi_id(ndi_data2)
@@ -32,10 +26,10 @@ class NDIBindingsUnitTest(omni.kit.test.AsyncTestCase):
 
     async def test_lowbandwidth(self):
         ndi_data = NDIData(SOURCE1)
-        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, PATH, False)
+        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, DUMMY_PATH, False)
         self.assertFalse(ndi_binding.get_lowbandwidth())
 
-        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, PATH, True)
+        ndi_binding = NDIBinding(DYNAMIC_ID1, ndi_data, DUMMY_PATH, True)
         self.assertTrue(ndi_binding.get_lowbandwidth())
 
         ndi_binding.set_lowbandwidth(False)
@@ -95,8 +89,8 @@ class ModelUnitTest(omni.kit.test.AsyncTestCase):
         model = NDIModel(None)
         streams_length = len(model._streams)
 
-        model.add_stream(ModelUnitTest.DYNAMIC_ID, ModelUnitTest.SOURCE1, False)
+        model.add_stream(DYNAMIC_ID, SOURCE1, False)
         self.assertEqual(len(model._streams), streams_length + 1)
-        model.add_stream(ModelUnitTest.DYNAMIC_ID, ModelUnitTest.SOURCE2, False)
+        model.add_stream(DYNAMIC_ID, SOURCE2, False)
         self.assertEqual(len(model._streams), streams_length + 2)
 """
