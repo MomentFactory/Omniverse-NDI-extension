@@ -97,6 +97,10 @@ class NDIBindingPanel(ui.CollapsableFrame):
     COPY_ICON = "resources/glyphs/copy.svg"
     LOW_BANDWIDTH_ICON = "resources/glyphs/AOV_dark.svg"
 
+    PLAYPAUSE_BTN_NAME = "play_pause_btn"
+    BANDWIDTH_BTN_NAME = "low_bandwidth_btn"
+    COPYPATH_BTN_NAME = "copy_path_btn"
+
     def __init__(self, binding: NDIBinding, model: NDIModel, window: NDIWindow, **kwargs):
         self._name = binding.get_id()
         super().__init__(self._name, **kwargs)
@@ -118,12 +122,15 @@ class NDIBindingPanel(ui.CollapsableFrame):
                         self._combobox_ui = ui.ComboBox(self._combobox)
 
                         self.playPauseToolButton = ui.Button(text="", image_url=NDIBindingPanel.PLAY_ICON, height=30,
-                                                             width=30, clicked_fn=self._on_click_play_pause_ndi)
+                                                             width=30, clicked_fn=self._on_click_play_pause_ndi,
+                                                             name=NDIBindingPanel.PLAYPAUSE_BTN_NAME)
                         self._lowBandWidthButton = ui.ToolButton(image_url=NDIBindingPanel.LOW_BANDWIDTH_ICON, width=30,
                                                                  height=30, tooltip="Low bandwidth mode",
-                                                                 clicked_fn=self._set_low_bandwidth_value)
+                                                                 clicked_fn=self._set_low_bandwidth_value,
+                                                                 name=NDIBindingPanel.BANDWIDTH_BTN_NAME)
                         ui.Button("", image_url=NDIBindingPanel.COPY_ICON, width=30, height=30,
-                                  clicked_fn=self._on_click_copy, tooltip="Copy dynamic texture path(dynamic://*)")
+                                  clicked_fn=self._on_click_copy, tooltip="Copy dynamic texture path(dynamic://*)",
+                                  name=NDIBindingPanel.COPYPATH_BTN_NAME)
                         self._set_ndi_status_icon(self._combobox.is_active())
 
     def _set_low_bandwidth_value(self):
@@ -131,10 +138,6 @@ class NDIBindingPanel(ui.CollapsableFrame):
 
     def _on_click_copy(self):
         pyperclip.copy(self._binding.get_id_full())
-
-    def _on_click_reset(self):
-        self._combobox.select_none()
-        self.collapsed = True
 
     def _start_ndi(self):
         lowbandwidth = self._lowBandWidthButton.model.get_value_as_bool()
