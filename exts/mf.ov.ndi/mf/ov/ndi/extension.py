@@ -2,6 +2,7 @@ from .window import NDIWindow
 import omni.ext
 import omni.kit.app
 import asyncio
+import omni.kit.ui
 
 
 class MFOVNdiExtension(omni.ext.IExt):

@@ -21,14 +21,24 @@ class USDtools():
     PREFIX = "dynamic://"
     SCOPE_NAME = "NDI_Looks"
 
-    def create_dynamic_material(name: str) -> UsdShade.Material:
+    def get_stage() -> Usd.Stage:
         usd_context = omni.usd.get_context()
-        stage: Usd.Stage = usd_context.get_stage()
+        return usd_context.get_stage()
+
+    def make_name_valid(name: str) -> str:
+        return Tf.MakeValidIdentifier(unidecode(name))
+
+    def create_dynamic_material(name: str) -> UsdShade.Material:
+        stage = USDtools.get_stage()
+        if not stage:
+            logger = logging.getLogger(__name__)
+            logger.error("Could not get stage")
+            return
 
         scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/{USDtools.SCOPE_NAME}"
         UsdGeom.Scope.Define(stage, scope_path)
 
-        safename = Tf.MakeValidIdentifier(unidecode(name))
+        safename = USDtools.make_name_valid(name)
         if name != safename:
             logger = logging.getLogger(__name__)
             logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
@@ -100,8 +110,11 @@ class USDtools():
         return result
 
     def set_prim_ndi_attribute(path: str, value: str):
-        usd_context = omni.usd.get_context()
-        stage: Usd.Stage = usd_context.get_stage()
+        stage = USDtools.get_stage()
+        if not stage:
+            logger = logging.getLogger(__name__)
+            logger.error("Could not get stage")
+            return
 
         prim: Usd.Prim = stage.GetPrimAtPath(path)
         if not prim.IsValid():
@@ -112,8 +125,11 @@ class USDtools():
         prim.CreateAttribute(USDtools.ATTR_NDI_NAME, Sdf.ValueTypeNames.String).Set(value)
 
     def set_prim_bandwidth_attribute(path: str, value: bool):
-        usd_context = omni.usd.get_context()
-        stage: Usd.Stage = usd_context.get_stage()
+        stage = USDtools.get_stage()
+        if not stage:
+            logger = logging.getLogger(__name__)
+            logger.error("Could not get stage")
+            return
 
         prim: Usd.Prim = stage.GetPrimAtPath(path)
         if not prim.IsValid():
