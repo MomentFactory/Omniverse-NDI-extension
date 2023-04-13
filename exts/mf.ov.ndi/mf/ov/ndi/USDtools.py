@@ -25,6 +25,17 @@ class USDtools():
         usd_context = omni.usd.get_context()
         return usd_context.get_stage()
 
+    def subscribe_to_stage_events(callback):
+        return (
+            omni.usd.get_context()
+            .get_stage_event_stream()
+            .create_subscription_to_pop(callback, name="mf.ov.ndi Stage Event Subscription")
+        )
+
+    def is_StageEventType_OPENED(type) -> bool:
+        t = omni.usd.StageEventType(type)
+        return type == int(omni.usd.StageEventType.OPENED)
+
     def make_name_valid(name: str) -> str:
         return Tf.MakeValidIdentifier(unidecode(name))
 

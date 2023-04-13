@@ -30,6 +30,9 @@ class NDIWindow(ui.Window):
                 self._ui_section_header()
                 self._ui_section_bindings()
 
+    def rebuild(self):
+        self.frame.rebuild()
+
     def on_kill_all_streams(self):
         for panel in self._bindingPanels:
             panel.on_stream_stopped()

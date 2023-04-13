@@ -5,6 +5,7 @@ from typing import List
 import logging
 import re
 import omni
+import carb.events
 
 
 class NDIBinding():
@@ -54,16 +55,17 @@ class NDIModel():
         self._reset_ndi_feeds()
         self._window = window
 
-        self._ndi_source_update: List[str] = []
-        stream = omni.kit.app.get_app().get_update_event_stream()
-        self._sub = stream.create_subscription_to_pop(self._on_update, name="update")
-
         self._streams: List[NDIVideoStream] = []
         self._ndi_tools = NDItools()
         self._ndi_tools.ndi_init()
         self._ndi_tools.ndi_find_init()
         self._ndi_finder: NDIfinder = NDIfinder(self._on_ndi_source_changed, self._ndi_tools)
-        # TODO: kill streams and refresh ui when opening new scene (there must be a subscription for that)
+
+        self._ndi_source_update: List[str] = []
+        stream = omni.kit.app.get_app().get_update_event_stream()
+        self._stream_sub = stream.create_subscription_to_pop(self._on_update, name="update")
+
+        self._stage_event_sub = USDtools.subscribe_to_stage_events(self._search_for_dynamic_material_event)
 
     def _on_update(self, e):
         self._check_for_ndi_source_change()
@@ -91,7 +93,8 @@ class NDIModel():
         if self._ndi_finder:
             self._ndi_finder.destroy()
         self._ndi_tools.destroy()
-        self._sub.unsubscribe()
+        self._stream_sub.unsubscribe()
+        self._stage_event_sub = None
 
 # region streams
     def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
@@ -142,6 +145,11 @@ class NDIModel():
     def create_dynamic_material(self, name: str):
         USDtools.create_dynamic_material(name)
         self.search_for_dynamic_material()
+
+    def _search_for_dynamic_material_event(self, e: carb.events.IEvent):
+        if USDtools.is_StageEventType_OPENED(e.type):
+            self.search_for_dynamic_material()
+            self._window.rebuild()
 
     def search_for_dynamic_material(self):
         result: List[DynamicPrim] = USDtools.find_all_dynamic_sources()
