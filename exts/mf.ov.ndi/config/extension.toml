@@ -1,5 +1,5 @@
 [package]
-version = "0.9.0"
+version = "0.10.0"
 
 title = "MF NDI® extension"
 description = "An extension to enable NDI® live video input in Omniverse."
@@ -27,3 +27,18 @@ requirements = [
     "unidecode"
 ]
 use_online_index = true
+
+[[test]]
+args = [
+    "--/app/window/dpiScaleOverride=1.0",
+    "--/app/window/scaleToMonitor=false"
+]
+dependencies = [
+    "omni.kit.ui_test",
+    "omni.usd"
+]
+timeout = 60
+stdoutFailPatterns.exclude = [
+    "*Could not get stage*",
+    "*Model doesn't have a registered window*"
+]

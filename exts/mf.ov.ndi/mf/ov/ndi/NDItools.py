@@ -108,6 +108,7 @@ class NDIVideoStream():
         self.uri = stream_uri
         self.is_ok = False
         self._thread: threading.Thread
+        self._lowbandwidth = lowbandwidth
 
         if not tools.is_ndi_ok():
             return
@@ -212,6 +213,7 @@ class NDIVideoStreamProxy():
         self.name = name
         self.uri = stream_uri
         self.is_ok = False
+        self._lowbandwidth = lowbandwidth
 
         denominator = 1
         if lowbandwidth:

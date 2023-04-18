@@ -2,6 +2,7 @@ from .window import NDIWindow
 import omni.ext
 import omni.kit.app
 import asyncio
+import omni.kit.ui
 
 
 class MFOVNdiExtension(omni.ext.IExt):
@@ -40,7 +41,7 @@ class MFOVNdiExtension(omni.ext.IExt):
 
     def show_window(self, menu, value):
         if value:
-            self._window = NDIWindow(width=800, height=230)
+            self._window = NDIWindow(width=800, height=275)
             self._window.set_visibility_changed_fn(self._visibility_changed_fn)
         elif self._window:
             self._window.destroy()
