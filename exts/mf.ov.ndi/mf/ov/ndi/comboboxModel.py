@@ -1,88 +1,54 @@
+from .eventsystem import EventSystem
+
 import omni.ui as ui
 from typing import List
 
 
 class ComboboxItem(ui.AbstractItem):
-    def __init__(self, ndi):
+    def __init__(self, value: str):
         super().__init__()
-        self.model = ui.SimpleStringModel(ndi.get_source())
-        self._ndi = ndi
+        self.model = ui.SimpleStringModel(value)
 
     def value(self):
         return self.model.get_value_as_string()
-
-    def is_active(self):
-        return self._ndi.is_active()
 
 
 class ComboboxModel(ui.AbstractItemModel):
     NONE_VALUE = "NONE"
     PROXY_VALUE = "PROXY (1080p30) - RED"
-    RUNNING_LABEL_SUFFIX = " - running"
-    items: List[ComboboxItem] = []
-    watchers = []
 
-    @staticmethod
-    def SetItems(values):
-        # Set the updated values while keeping the index accurate to the value potential new position
-        sources: List[str] = [combobox.currentvalue() for combobox in ComboboxModel.watchers]
-        ComboboxModel.items = []
-        for value in values:
-            ComboboxModel.items.append(ComboboxItem(value))
-        for i, watcher in enumerate(ComboboxModel.watchers):
-            watcher._set_index_from_value(sources[i])
-            watcher._item_changed(None)
-
-    @staticmethod
-    def ResetWatchers():
-        ComboboxModel.watchers = []
-
-    def __init__(self, name: str, model, value: str, on_change_fn, combobox_alt):
+    def __init__(self, items: List[str], selected: str, name: str, index: int):
         super().__init__()
-
-        self._model = model
         self._name = name
-        self._on_change_fn = on_change_fn
+        self._index = index
 
+        # minimal model implementation
         self._current_index = ui.SimpleIntModel()
-        self._set_index_from_value(value)
-        ComboboxModel.watchers.append(self)
+        self._current_index.add_value_changed_fn(lambda a: self._current_index_changed_fn())
 
-        self._combobox_alt = combobox_alt
-
-        self._current_index.add_value_changed_fn(
-            lambda a: self._current_index_changed_fn()
-        )
-        self.set_alt_value()
-
-    def _set_index_from_value(self, value: str):
-        index = next((i for i, item in enumerate(self.items) if item.value() == value), 0)
-        self._current_index.set_value(index)
+        self.set_items_and_current(items, selected)
 
     def _current_index_changed_fn(self):
-        self._model.set_binding(self._name, self.currentvalue())
         self._item_changed(None)
-        self._on_change_fn()
-        self.set_alt_value()
+        EventSystem.send_event(EventSystem.COMBOBOX_CHANGED_EVENT,
+                               payload={"id": self._name, "index": self._index, "value": self._current_value()})
 
-    def set_alt_value(self):
-        self._combobox_alt.text = self.currentvalue() + ComboboxModel.RUNNING_LABEL_SUFFIX
+    def set_items_and_current(self, items: List[str], current: str):
+        self._items = [ComboboxItem(text) for text in items]
+        index = next((i for i, item in enumerate(self._items) if item.value() == current), 0)
+        self._current_index.set_value(index)
+        self._item_changed(None)
 
-    def currentvalue(self):
-        current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
+    def _current_value(self) -> str:
+        current_item = self._items[self._current_index.get_value_as_int()]
         return current_item.value()
 
+    # minimal model implementation
     def get_item_children(self, item):
-        return ComboboxModel.items
+        return self._items
 
+    # minimal model implementation
     def get_item_value_model(self, item, column_id):
         if item is None:
             return self._current_index
         return item.model
-
-    def select_none(self):
-        self._current_index.set_value(0)
-
-    def is_active(self):
-        current_item = ComboboxModel.items[self._current_index.get_value_as_int()]
-        return current_item.is_active()

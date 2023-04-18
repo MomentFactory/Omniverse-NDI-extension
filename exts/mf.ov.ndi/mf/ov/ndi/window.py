@@ -1,12 +1,18 @@
-from .model import NDIModel, NDIBinding
+from .bindings import Binding
 from .comboboxModel import ComboboxModel
+from .eventsystem import EventSystem
+from .model import Model
+from .USDtools import USDtools
+
+import carb.events
 import omni.ui as ui
 import pyperclip
-import logging
+from typing import List
 
 
-class NDIWindow(ui.Window):
+class Window(ui.Window):
     WINDOW_NAME = "NDI®"
+
     DEFAULT_TEXTURE_NAME = "myDynamicMaterial"
     NEW_TEXTURE_BTN_TXT = "Create Dynamic Texture"
     DISCOVER_TEX_BTN_TXT = "Discover Dynamic Textures"
@@ -14,15 +20,36 @@ class NDIWindow(ui.Window):
     EMPTY_TEXTURE_LIST_TXT = "No dynamic texture found"
 
     def __init__(self, delegate=None, **kwargs):
-        super().__init__(NDIWindow.WINDOW_NAME, **kwargs)
-        self._model: NDIModel = NDIModel(self)
-        self._refresh_materials()
+        self._model: Model = Model()
+        self._bindingPanels: List[BindingPanel] = []
+
+        super().__init__(Window.WINDOW_NAME, **kwargs)
         self.frame.set_build_fn(self._build_fn)
 
+        self._subscribe()
+        self._model.search_for_dynamic_material()
+
     def destroy(self):
-        self._model.on_shutdown()
-        self._model = None
+        self._model.destroy()
+        self._unsubscribe()
         super().destroy()
+
+    def _subscribe(self):
+        self._sub: List[carb.events.ISubscription] = []
+        self._sub.append(EventSystem.subscribe(EventSystem.BINDINGS_CHANGED_EVENT, self._bindings_updated_evt_callback))
+        self._sub.append(EventSystem.subscribe(EventSystem.COMBOBOX_CHANGED_EVENT, self._combobox_changed_evt_callback))
+        self._sub.append(EventSystem.subscribe(EventSystem.COMBOBOX_SOURCE_CHANGE_EVENT,
+                                               self._ndi_sources_changed_evt_callback))
+        self._sub.append(EventSystem.subscribe(EventSystem.NDI_STATUS_CHANGE_EVENT,
+                                               self._ndi_status_change_evt_callback))
+        self._sub.append(EventSystem.subscribe(EventSystem.STREAM_STOP_TIMEOUT_EVENT,
+                                               self._stream_stop_timeout_evt_callback))
+
+    def _unsubscribe(self):
+        for sub in self._sub:
+            sub.unsubscribe()
+            sub = None
+        self._sub.clear()
 
     def _build_fn(self):
         with self.frame:
@@ -30,12 +57,31 @@ class NDIWindow(ui.Window):
                 self._ui_section_header()
                 self._ui_section_bindings()
 
-    def rebuild(self):
+    def _bindings_updated_evt_callback(self, e: carb.events.IEvent):
         self.frame.rebuild()
 
-    def on_kill_all_streams(self):
+    def _combobox_changed_evt_callback(self, e: carb.events.IEvent):
+        value: str = e.payload["value"]
+        dynamic_id = e.payload["id"]
+        panel_index = e.payload["index"]
+
+        self._model.apply_new_binding_source(dynamic_id, value)
+        self._model.set_ndi_source_prim_attr(dynamic_id, value)
+
+        if (len(self._bindingPanels) > 0):
+            self._bindingPanels[panel_index].combobox_item_changed()
+
+    def _ndi_sources_changed_evt_callback(self, e: carb.events.IEvent):
         for panel in self._bindingPanels:
-            panel.on_stream_stopped()
+            panel.combobox_items_changed(e.payload["sources"])
+
+    def _ndi_status_change_evt_callback(self, e: carb.events.IEvent):
+        for panel in self._bindingPanels:
+            panel.check_for_ndi_status()
+
+    def _stream_stop_timeout_evt_callback(self, e: carb.events.IEvent):
+        panel: BindingPanel = next(x for x in self._bindingPanels if x.get_dynamic_id() == e.payload["dynamic_id"])
+        panel.on_stop_stream()
 
 # region UI
     def _ui_section_header(self):
@@ -43,56 +89,61 @@ class NDIWindow(ui.Window):
 
         with ui.HStack(height=0):
             self._dynamic_name = ui.StringField()
-            self._dynamic_name.model.set_value(NDIWindow.DEFAULT_TEXTURE_NAME)
-            ui.Button(NDIWindow.NEW_TEXTURE_BTN_TXT, image_url="resources/glyphs/menu_plus.svg", image_width=24,
+            self._dynamic_name.model.set_value(Window.DEFAULT_TEXTURE_NAME)
+            ui.Button(Window.NEW_TEXTURE_BTN_TXT, image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
+
         with ui.HStack(height=0):
-            ui.Button(NDIWindow.DISCOVER_TEX_BTN_TXT, image_url="resources/glyphs/menu_refresh.svg", image_width=24,
+            ui.Button(Window.DISCOVER_TEX_BTN_TXT, image_url="resources/glyphs/menu_refresh.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_refresh_materials)
-            ui.Button(NDIWindow.STOP_STREAMS_BTN_TXT, clicked_fn=self._kill_all_streams)
+            ui.Button(Window.STOP_STREAMS_BTN_TXT, clicked_fn=self._on_click_stop_all_streams)
 
     def _ui_section_bindings(self):
-        ComboboxModel.ResetWatchers()
         self._bindingPanels = []
         with ui.ScrollingFrame():
             with ui.VStack():
-                bindings: NDIBinding = self._model.get_bindings()
-                if len(bindings) == 0:
-                    ui.Label(NDIWindow.EMPTY_TEXTURE_LIST_TXT)
+                count: int = self._model.get_bindings_count()
+                if count == 0:
+                    ui.Label(Window.EMPTY_TEXTURE_LIST_TXT)
                 else:
-                    for binding in bindings:
-                        self._bindingPanels.append(NDIBindingPanel(binding, self._model, self, height=0))
+                    for i in range(count):
+                        self._bindingPanels.append(BindingPanel(i, self, height=0))
 # endregion
 
 # region controls
     def _on_click_create_dynamic_material(self):
         name: str = self._dynamic_name.model.get_value_as_string()
-        if name == "":
-            logger = logging.getLogger(__name__)
-            logger.warning("Cannot create dynamic texture with empty name")
-            return
         self._model.create_dynamic_material(name)
-        self.refresh_materials_and_rebuild()
 
     def _on_click_refresh_materials(self):
-        self.refresh_materials_and_rebuild()
-
-    def refresh_materials_and_rebuild(self):
-        self._refresh_materials()
-        # TODO: Better rebuild (sub component instead of whole window)
-        self.frame.rebuild()
-
-    def _refresh_materials(self):
         self._model.search_for_dynamic_material()
 
-    def _kill_all_streams(self):
-        self._model.kill_all_streams()
+    def _on_click_stop_all_streams(self):
+        self._model.stop_all_streams()
         for panel in self._bindingPanels:
-            panel.on_stream_stopped()
+            panel.on_stop_stream()
+# endregion
+
+# region BindingPanel Callable
+    def get_binding_data_from_index(self, index: int):
+        return self._model.get_binding_data_from_index(index)
+
+    def get_choices_for_combobox(self) -> List[str]:
+        return self._model.get_ndi_source_list()
+
+    def apply_lowbandwidth_value(self, dynamic_id: str, value: bool):
+        self._model.apply_lowbandwidth_value(dynamic_id, value)
+        self._model.set_lowbandwidth_prim_attr(dynamic_id, value)
+
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool) -> bool:
+        return self._model.try_add_stream(binding, lowbandwidth)
+
+    def stop_stream(self, binding: Binding):
+        return self._model.stop_stream(binding)
 # endregion
 
 
-class NDIBindingPanel(ui.CollapsableFrame):
+class BindingPanel(ui.CollapsableFrame):
     NDI_INACTIVE = "resources/glyphs/error.svg"
     NDI_ACTIVE = "resources/glyphs/check_solid.svg"
     PLAY_ICON = "resources/glyphs/timeline_play.svg"
@@ -104,82 +155,99 @@ class NDIBindingPanel(ui.CollapsableFrame):
     BANDWIDTH_BTN_NAME = "low_bandwidth_btn"
     COPYPATH_BTN_NAME = "copy_path_btn"
 
-    def __init__(self, binding: NDIBinding, model: NDIModel, window: NDIWindow, **kwargs):
-        self._name = binding.get_id()
-        super().__init__(self._name, **kwargs)
-        self._binding: NDIBinding = binding
-        self._binding.set_panel(self)
+    RUNNING_LABEL_SUFFIX = " - running"
+
+    def __init__(self, index: int, window: Window, **kwargs):
+        self._index = index
         self._window = window
-        self._model = model
-        self._isPlaying = False
+        binding, _, ndi = self._get_data()
+        choices = self._get_choices()
+        self._dynamic_id = binding.dynamic_id
+        self._lowbandwidth_value = binding.lowbandwidth
+        self._is_playing = False
+
+        super().__init__(binding.dynamic_id, **kwargs)
 
         with self:
             with ui.HStack():
-                with ui.VStack():
-                    with ui.HStack():
-                        self._status_icon = ui.Image(NDIBindingPanel.NDI_INACTIVE, width=30)
-                        self._combobox_alt = ui.Label("")
-                        self._combobox_alt.visible = False
-                        self._combobox = ComboboxModel(self._name, self._model, self._binding.get_source(),
-                                                       self.on_ndi_status_change, self._combobox_alt)
-                        self._combobox_ui = ui.ComboBox(self._combobox)
+                self._status_icon = ui.Image(BindingPanel.NDI_INACTIVE, width=30)
+                self._set_ndi_status_icon(ndi.active)
 
-                        self.playPauseToolButton = ui.Button(text="", image_url=NDIBindingPanel.PLAY_ICON, height=30,
-                                                             width=30, clicked_fn=self._on_click_play_pause_ndi,
-                                                             name=NDIBindingPanel.PLAYPAUSE_BTN_NAME)
-                        self._lowBandWidthButton = ui.ToolButton(image_url=NDIBindingPanel.LOW_BANDWIDTH_ICON, width=30,
-                                                                 height=30, tooltip="Low bandwidth mode",
-                                                                 clicked_fn=self._set_low_bandwidth_value,
-                                                                 name=NDIBindingPanel.BANDWIDTH_BTN_NAME)
-                        ui.Button("", image_url=NDIBindingPanel.COPY_ICON, width=30, height=30,
-                                  clicked_fn=self._on_click_copy, tooltip="Copy dynamic texture path(dynamic://*)",
-                                  name=NDIBindingPanel.COPYPATH_BTN_NAME)
-                        self._set_ndi_status_icon(self._combobox.is_active())
+                self._combobox_alt = ui.Label("")
+                self._set_combobox_alt_text(binding.ndi_source)
+                self._combobox_alt.visible = False
 
-    def _set_low_bandwidth_value(self):
-        self._binding.set_lowbandwidth(not self._binding.get_lowbandwidth())
+                self._combobox = ComboboxModel(choices, binding.ndi_source, binding.dynamic_id, self._index)
+                self._combobox_ui = ui.ComboBox(self._combobox)
+
+                self.play_pause_toolbutton = ui.Button(text="", image_url=BindingPanel.PLAY_ICON, height=30, width=30,
+                                                       clicked_fn=self._on_click_play_pause_ndi,
+                                                       name=BindingPanel.PLAYPAUSE_BTN_NAME)
+                self._lowbandwidth_toolbutton = ui.ToolButton(image_url=BindingPanel.LOW_BANDWIDTH_ICON, width=30,
+                                                              height=30, tooltip="Low bandwidth mode",
+                                                              clicked_fn=self._set_low_bandwidth_value,
+                                                              name=BindingPanel.BANDWIDTH_BTN_NAME)
+                self._lowbandwidth_toolbutton.model.set_value(self._lowbandwidth_value)
+                ui.Button("", image_url=BindingPanel.COPY_ICON, width=30, height=30, clicked_fn=self._on_click_copy,
+                          tooltip="Copy dynamic texture path(dynamic://*)", name=BindingPanel.COPYPATH_BTN_NAME)
+
+    def combobox_items_changed(self, items: List[str]):
+        binding, _, _ = self._get_data()
+        self._combobox.set_items_and_current(items, binding.ndi_source)
+
+    def check_for_ndi_status(self):
+        _, _, ndi = self._get_data()
+        self._set_ndi_status_icon(ndi.active)
+
+    def combobox_item_changed(self):
+        binding, _, ndi = self._get_data()
+        self._set_combobox_alt_text(binding.ndi_source)
+        self._set_ndi_status_icon(ndi.active)
+
+    def get_dynamic_id(self) -> str:
+        return self._dynamic_id
+
+    def _get_data(self):
+        return self._window.get_binding_data_from_index(self._index)
+
+    def _get_choices(self):
+        return self._window.get_choices_for_combobox()
 
     def _on_click_copy(self):
-        pyperclip.copy(self._binding.get_id_full())
+        pyperclip.copy(f"{USDtools.PREFIX}{self._dynamic_id}")
 
-    def _start_ndi(self):
-        lowbandwidth = self._lowBandWidthButton.model.get_value_as_bool()
-        if self._model.add_stream(self._binding.get_id(), self._binding.get_source(), lowbandwidth):
-            self._lowBandWidthButton.enabled = False
-            self._lowBandWidthButton.model.set_value(lowbandwidth)
-            self._combobox_ui.visible = False
-            self._combobox_alt.visible = True
-            self._isPlaying = True
-            self._toggle_play_pause_btn()
+    def _set_low_bandwidth_value(self):
+        self._lowbandwidth_value = not self._lowbandwidth_value
+        self._window.apply_lowbandwidth_value(self._dynamic_id, self._lowbandwidth_value)
 
-    def _kill_stream(self):
-        self._model.remove_stream(self._binding.get_id(), self._binding.get_source())
-        self.on_stream_stopped()
+    def _on_play_stream(self):
+        self._is_playing = True
+        self.play_pause_toolbutton.image_url = BindingPanel.PAUSE_ICON
+        self._lowbandwidth_toolbutton.enabled = False
+        self._combobox_ui.visible = False
+        self._combobox_alt.visible = True
 
-    def on_stream_stopped(self):
-        self._lowBandWidthButton.enabled = True
-        self._combobox_alt.visible = False
+    def on_stop_stream(self):
+        self._is_playing = False
+        self.play_pause_toolbutton.image_url = BindingPanel.PLAY_ICON
+        self._lowbandwidth_toolbutton.enabled = True
         self._combobox_ui.visible = True
-        self._isPlaying = False
-        self._toggle_play_pause_btn()
+        self._combobox_alt.visible = False
 
     def _on_click_play_pause_ndi(self):
-        if self._isPlaying:
-            self._kill_stream()
+        binding, _, _ = self._get_data()
+        if self._is_playing:
+            self._window.stop_stream(binding)
+            self.on_stop_stream()
         else:
-            self._start_ndi()
+            if self._window.try_add_stream(binding, self._lowbandwidth_value):
+                self._on_play_stream()
 
-    def _toggle_play_pause_btn(self):
-        self.playPauseToolButton.image_url = NDIBindingPanel.PAUSE_ICON if self._isPlaying else NDIBindingPanel.PLAY_ICON
-
-    def on_ndi_status_change(self):
-        status = self._binding.get_ndi_status()
-        self._set_ndi_status_icon(status)
-        if not status:
-            self._kill_stream()
+    def _set_combobox_alt_text(self, text: str):
+        self._combobox_alt.text = f"{text}{BindingPanel.RUNNING_LABEL_SUFFIX}"
 
     def _set_ndi_status_icon(self, active: bool):
         if active:
-            self._status_icon.source_url = NDIBindingPanel.NDI_ACTIVE
+            self._status_icon.source_url = BindingPanel.NDI_ACTIVE
         else:
-            self._status_icon.source_url = NDIBindingPanel.NDI_INACTIVE
+            self._status_icon.source_url = BindingPanel.NDI_INACTIVE

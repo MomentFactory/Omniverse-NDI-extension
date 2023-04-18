@@ -1,144 +1,36 @@
+from .bindings import Binding, BindingsModel
 from .comboboxModel import ComboboxModel
-from .USDtools import USDtools, DynamicPrim
-from .NDItools import NDItools, NDIData, NDIVideoStream, NDIVideoStreamProxy, NDIfinder
-from typing import List
+from .NDItools import NDItools
+from .USDtools import DynamicPrim, USDtools
+
 import logging
 import re
-import omni
-import carb.events
+from typing import List
 
 
-class NDIBinding():
-    def __init__(self, dynamic_id: str, ndi: NDIData, path: str, lowbandwidth: bool):
-        self._dynamic_id = dynamic_id
-        self._ndi = ndi
-        self._path = path
-        self._lowbandwidth = lowbandwidth
-        self._panel = None
+class Model():
+    def __init__(self):
+        self._bindings_model: BindingsModel = BindingsModel()
+        self._ndi: NDItools = NDItools()
 
-    def get_id(self) -> str:
-        return self._dynamic_id
+    def destroy(self):
+        self._bindings_model.destroy()
 
-    def get_id_full(self):
-        return USDtools.PREFIX + self._dynamic_id
+# region bindings
+    def get_bindings_count(self) -> int:
+        return self._bindings_model.count()
 
-    def get_source(self) -> str:
-        return self._ndi.get_source()
+    def get_binding_data_from_index(self, index: int):
+        return self._bindings_model.get(index)
 
-    def set_ndi_id(self, ndi: NDIData):
-        self._ndi.set_active_value_changed_fn(None)
-        self._ndi = ndi
-        self._ndi.set_active_value_changed_fn(self._on_active_value_changed)
-        USDtools.set_prim_ndi_attribute(self._path, self._ndi.get_source())
+    def get_ndi_source_list(self) -> List[str]:
+        return self._bindings_model.get_source_list()
 
-    def set_lowbandwidth(self, value: bool):
-        self._lowbandwidth = value
-        USDtools.set_prim_bandwidth_attribute(self._path, self._lowbandwidth)
+    def apply_new_binding_source(self, dynamic_id: str, new_source: str):
+        self._bindings_model.bind(dynamic_id, new_source)
 
-    def get_lowbandwidth(self) -> bool:
-        return self._lowbandwidth
-
-    def get_ndi_status(self) -> bool:
-        return self._ndi.is_active()
-
-    def set_panel(self, panel):
-        self._panel = panel
-
-    def _on_active_value_changed(self):
-        self._panel.on_ndi_status_change()
-
-
-class NDIModel():
-    def __init__(self, window):
-        self._bindings: List[NDIBinding] = []
-        self._ndi_feeds: List[NDIData] = []
-        self._reset_ndi_feeds()
-        self._window = window
-
-        self._streams: List[NDIVideoStream] = []
-        self._ndi_tools = NDItools()
-        self._ndi_tools.ndi_init()
-        self._ndi_tools.ndi_find_init()
-        self._ndi_finder: NDIfinder = NDIfinder(self._on_ndi_source_changed, self._ndi_tools)
-
-        self._ndi_source_update: List[str] = []
-        stream = omni.kit.app.get_app().get_update_event_stream()
-        self._stream_sub = stream.create_subscription_to_pop(self._on_update, name="update")
-
-        self._stage_event_sub = USDtools.subscribe_to_stage_events(self._search_for_dynamic_material_event)
-
-    def _on_update(self, e):
-        self._check_for_ndi_source_change()
-        self._check_for_stream_not_running()
-
-    def _on_ndi_source_changed(self, sources: List[str]):
-        self._ndi_source_update = sources.copy()
-
-    def _check_for_ndi_source_change(self):
-        if len(self._ndi_source_update) > 0:
-            self._apply_ndi_feeds(self._ndi_source_update)
-            self._ndi_source_update = []
-
-    def _check_for_stream_not_running(self):
-        to_remove = []
-        for stream in self._streams:
-            if not stream._is_running:
-                to_remove.append(stream)
-        for r in to_remove:
-            self._streams.remove(r)
-            r.destroy()
-
-    def on_shutdown(self):
-        self.kill_all_streams()
-        if self._ndi_finder:
-            self._ndi_finder.destroy()
-        self._ndi_tools.destroy()
-        self._stream_sub.unsubscribe()
-        self._stage_event_sub = None
-
-# region streams
-    def add_stream(self, name: str, uri: str, lowbandwidth: bool) -> bool:
-        # TODO: Stop the possibility of adding 2 streams with the same name
-        if uri == ComboboxModel.NONE_VALUE:
-            logger = logging.getLogger(__name__)
-            logger.warning("Won't create stream without NDI® source")
-            return False
-
-        if uri == ComboboxModel.PROXY_VALUE:
-            fps = float(re.search("\((.*)\)", uri).group(1).split("p")[1])
-            video_stream = NDIVideoStreamProxy(name, uri, fps, lowbandwidth)
-            return self._add_stream(video_stream, uri)
-        else:
-            video_stream = NDIVideoStream(name, uri, lowbandwidth, self._ndi_tools)
-            return self._add_stream(video_stream, uri)
-
-    def _add_stream(self, video_stream, uri) -> bool:
-        if not video_stream.is_ok:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error opening stream: {uri}")
-            return False
-
-        self._streams.append(video_stream)
-        return True
-
-    def kill_all_streams(self):
-        self._kill_all_streams_window()
-        for stream in self._streams:
-            stream.destroy()
-        self._streams = []
-
-    def _kill_all_streams_window(self):
-        if self._window:
-            self._window.on_kill_all_streams()
-        else:
-            logger = logging.getLogger(__name__)
-            logger.error("Model doesn't have a registered window")
-
-    def remove_stream(self, name: str, uri: str):
-        stream: NDIVideoStream = next((x for x in self._streams if x.name == name and x.uri == uri), None)
-        if stream is not None:  # could be none if already stopped
-            self._streams.remove(stream)
-            stream.destroy()
+    def apply_lowbandwidth_value(self, dynamic_id: str, value: bool):
+        self._bindings_model.set_low_bandwidth(dynamic_id, value)
 # endregion
 
 # region dynamic
@@ -146,110 +38,46 @@ class NDIModel():
         USDtools.create_dynamic_material(name)
         self.search_for_dynamic_material()
 
-    def _search_for_dynamic_material_event(self, e: carb.events.IEvent):
-        if USDtools.is_StageEventType_OPENED(e.type):
-            self.search_for_dynamic_material()
-            self._window.rebuild()
-
     def search_for_dynamic_material(self):
         result: List[DynamicPrim] = USDtools.find_all_dynamic_sources()
+        self._bindings_model.update_dynamic_prims(result)
 
-        # Add new shader sources as bindings
-        for dynamic_prim in result:
-            dynamic_id = dynamic_prim.name
-            ndi_source = dynamic_prim.ndi
-            binding = self._get_binding_from_id(dynamic_id)
-            lowbandwidth = dynamic_prim.low
-            if binding is None:
-                source = NDIData(ndi_source, False) if ndi_source is not None else NDItools.NONE_DATA
-                binding = NDIBinding(dynamic_id, source, dynamic_prim.path, lowbandwidth)
-                self._bindings.append(binding)
+    def _get_prims_with_id(self, dynamic_id: str) -> List[DynamicPrim]:
+        prims: List[DynamicPrim] = self._bindings_model.get_prim_list()
+        return [x for x in prims if x.dynamic_id == dynamic_id]
 
-        # Remove unresolved bindings
-        to_remove: List[int] = []
-        for i in range(len(self._bindings)):
-            binding = self._bindings[i]
-            found: bool = False
-            for dynamic_prim in result:
-                if binding.get_id() == dynamic_prim.name:
-                    found = True
-            if not found:
-                to_remove.append(i)
-        for index in reversed(to_remove):
-            self._bindings.pop(index)
+    def set_ndi_source_prim_attr(self, dynamic_id: str, source: str):
+        for prim in self._get_prims_with_id(dynamic_id):
+            USDtools.set_prim_ndi_attribute(prim.path, source)
 
-        self._sort_bindings()
-        self._search_for_ndi_in_bindings()
+    def set_lowbandwidth_prim_attr(self, dynamic_id: str, value: bool):
+        for prim in self._get_prims_with_id(dynamic_id):
+            USDtools.set_prim_lowbandwidth_attribute(prim.path, value)
 # endregion
 
-# region bindings
-    def get_bindings(self) -> List[NDIBinding]:
-        return self._bindings
+# region stream
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool) -> bool:
+        if self._ndi.get_stream(binding.dynamic_id) is not None:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"There's already a stream running for {binding.dynamic_id}")
+            return False
 
-    def set_binding(self, dynamic_id: str, ndi_source: str):
-        binding: NDIBinding = self._get_binding_from_id(dynamic_id)
-        logger = logging.getLogger(__name__)
-        if binding is None:
-            logger.error(f"No binding found for {dynamic_id}")
+        if binding.ndi_source == ComboboxModel.NONE_VALUE:
+            logger = logging.getLogger(__name__)
+            logger.warning("Won't create stream without NDI® source")
+            return False
+
+        if binding.ndi_source == ComboboxModel.PROXY_VALUE:
+            fps = float(re.search("\((.*)\)", binding.ndi_source).group(1).split("p")[1])
+            success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth)
+            return success
         else:
-            ndi = self._find_ndidata_from_source(ndi_source)
-            if ndi is None:
-                logger.error(f"No NDI® source found for {ndi_source}")
-            else:
-                binding.set_ndi_id(ndi)
+            success: bool = self._ndi.try_add_stream(binding.dynamic_id, binding.ndi_source, lowbandwidth)
+            return success
 
-    def _get_binding_from_id(self, dynamic_id: str) -> NDIBinding:
-        return next((x for x in self._bindings if x.get_id() == dynamic_id), None)
+    def stop_stream(self, binding: Binding):
+        self._ndi.stop_stream(binding.dynamic_id)
 
-    def _get_binding_from_source(self, source: str) -> NDIBinding:
-        return next((x for x in self._bindings if x.get_source() == source), None)
-
-    def _sort_bindings(self):
-        self._bindings.sort(key=lambda x: x.get_id())
-# endregion
-
-# region NDI
-    def _find_ndidata_from_source(self, source: str) -> NDIData:
-        return next((x for x in self._ndi_feeds if x.get_source() == source), None)
-
-    def _add_bindings_to_feeds(self):
-        for binding in self._bindings:
-            ndi = binding.get_source()
-            found = self._find_ndidata_from_source(ndi)
-            if found is None:
-                self._ndi_feeds.append(NDIData(ndi))
-
-    def _search_for_ndi_in_bindings(self):
-        self._add_bindings_to_feeds()
-        self._push_ndi_to_combobox()
-
-    def _apply_ndi_feeds(self, others: List[str]):
-        previous_sources = [feed.get_source() for feed in self._ndi_feeds
-                            if feed.get_source() is not ComboboxModel.NONE_VALUE
-                            and feed.get_source() is not ComboboxModel.PROXY_VALUE]
-        new_sources = set(others) - set(previous_sources)
-        sources_inactive = set(previous_sources) - set(others)
-        sources_active = set(others) & set(previous_sources)
-
-        for other in new_sources:
-            self._ndi_feeds.append(NDIData(other, True))
-
-        for other in sources_inactive:
-            found: NDIData = self._find_ndidata_from_source(other)
-            if found is not None:
-                found.set_active(False)
-
-        for other in sources_active:
-            found: NDIData = self._find_ndidata_from_source(other)
-            if found is not None:
-                found.set_active(True)
-
-        self._push_ndi_to_combobox()
-
-    def _reset_ndi_feeds(self):
-        self._ndi_feeds = [NDItools.NONE_DATA, NDItools.PROXY_DATA]
-
-    def _push_ndi_to_combobox(self):
-        ComboboxModel.SetItems(self._ndi_feeds)
-
+    def stop_all_streams(self):
+        self._ndi.stop_all_streams()
 # endregion
