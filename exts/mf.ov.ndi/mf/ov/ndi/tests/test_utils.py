@@ -60,5 +60,5 @@ def get_dynamic_material_prim(name: str):
 
 
 async def refresh_dynamic_list(window):
-    button = window.find(f"**/Button[*].text=='{window.DISCOVER_TEX_BTN_TXT}'")
+    button = window.find(f"**/Button[*].text=='{Window.DISCOVER_TEX_BTN_TXT}'")
     await button.click()

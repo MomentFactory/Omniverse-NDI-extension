@@ -35,6 +35,9 @@ class ComboboxModel(ui.AbstractItemModel):
 
     def set_items_and_current(self, items: List[str], current: str):
         self._items = [ComboboxItem(text) for text in items]
+        self._set_current_from_value(current)
+
+    def _set_current_from_value(self, current: str):
         index = next((i for i, item in enumerate(self._items) if item.value() == current), 0)
         self._current_index.set_value(index)
         self._item_changed(None)
