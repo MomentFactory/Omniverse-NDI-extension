@@ -151,8 +151,12 @@ class Window(ui.Window):
 
 
 class BindingPanel(ui.CollapsableFrame):
-    NDI_INACTIVE = "resources/glyphs/error.svg"
-    NDI_ACTIVE = "resources/glyphs/check_solid.svg"
+    NDI_COLOR_STOPPED = "#E6E7E8"
+    NDI_COLOR_PLAYING = "#78B159"
+    NDI_COLOR_WARNING = "#F4900C"
+    NDI_COLOR_INACTIVE = "#DD2E45"
+
+    NDI_STATUS = "resources/glyphs/circle.svg"
     PLAY_ICON = "resources/glyphs/timeline_play.svg"
     PAUSE_ICON = "resources/glyphs/toolbar_pause.svg"
     COPY_ICON = "resources/glyphs/copy.svg"
@@ -177,7 +181,7 @@ class BindingPanel(ui.CollapsableFrame):
 
         with self:
             with ui.HStack():
-                self._status_icon = ui.Image(BindingPanel.NDI_INACTIVE, width=30)
+                self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20)
                 self._set_ndi_status_icon(ndi.active)
 
                 self._combobox_alt = ui.Label("")
@@ -233,6 +237,7 @@ class BindingPanel(ui.CollapsableFrame):
         self._lowbandwidth_toolbutton.enabled = False
         self._combobox_ui.visible = False
         self._combobox_alt.visible = True
+        self.check_for_ndi_status()
 
     def on_stop_stream(self):
         self._is_playing = False
@@ -240,6 +245,7 @@ class BindingPanel(ui.CollapsableFrame):
         self._lowbandwidth_toolbutton.enabled = True
         self._combobox_ui.visible = True
         self._combobox_alt.visible = False
+        self.check_for_ndi_status()
 
     def _on_click_play_pause_ndi(self):
         binding, _, _ = self._get_data()
@@ -254,7 +260,11 @@ class BindingPanel(ui.CollapsableFrame):
         self._combobox_alt.text = f"{text}{BindingPanel.RUNNING_LABEL_SUFFIX}"
 
     def _set_ndi_status_icon(self, active: bool):
-        if active:
-            self._status_icon.source_url = BindingPanel.NDI_ACTIVE
-        else:
-            self._status_icon.source_url = BindingPanel.NDI_INACTIVE
+        if active and self._is_playing:
+            self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_PLAYING)}
+        elif active and not self._is_playing:
+            self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_STOPPED)}
+        elif not active and self._is_playing:
+            self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_WARNING)}
+        else:  # not active and not self._is_playing
+            self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_INACTIVE)}

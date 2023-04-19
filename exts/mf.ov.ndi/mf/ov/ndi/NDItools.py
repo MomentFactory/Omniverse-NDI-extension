@@ -113,7 +113,7 @@ class NDItools():
 
 
 class NDIfinder():
-    SLEEP_INTERVAL: float = 3  # seconds
+    SLEEP_INTERVAL: float = 2  # seconds
 
     def __init__(self, tools: NDItools):
         self._tools = tools
