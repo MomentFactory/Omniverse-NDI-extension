@@ -1,6 +1,7 @@
-import omni.kit.test
 from ..USDtools import USDtools
 from .test_utils import make_stage, close_stage, create_dynamic_material, create_dynamic_rectlight, SOURCE1
+
+import omni.kit.test
 
 
 class USDValidNameUnitTest(omni.kit.test.AsyncTestCase):
@@ -53,10 +54,11 @@ class USDToolsUnitTest(omni.kit.test.AsyncTestCase):
     async def test_set_property_bandwidth(self):
         material = create_dynamic_material()
         path = material.GetPath()
-        USDtools.set_prim_bandwidth_attribute(path, True)
+        print(f"POTATOE={material}")
+        USDtools.set_prim_lowbandwidth_attribute(path, True)
 
         attr = material.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
         self.assertTrue(attr.Get())
 
-        USDtools.set_prim_bandwidth_attribute(path, False)
+        USDtools.set_prim_lowbandwidth_attribute(path, False)
         self.assertFalse(attr.Get())

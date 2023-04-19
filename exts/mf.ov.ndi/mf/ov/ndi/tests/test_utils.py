@@ -2,7 +2,7 @@ import omni
 import omni.kit.ui_test as ui_test
 from pxr import Usd, UsdLux, UsdShade
 from ..USDtools import USDtools
-from ..window import NDIWindow
+from ..window import Window
 
 SOURCE1 = "MY-PC (Test Pattern)"
 SOURCE2 = "MY-PC (Test Pattern 2)"
@@ -38,11 +38,12 @@ def close_stage():
 
 
 def get_window():
-    return ui_test.find(NDIWindow.WINDOW_NAME)
+    return ui_test.find(Window.WINDOW_NAME)
 
 
 def create_dynamic_material() -> UsdShade.Material:
-    return USDtools.create_dynamic_material(DYNAMIC_ID1)
+    USDtools.create_dynamic_material(DYNAMIC_ID1)
+    return get_dynamic_material_prim(DYNAMIC_ID1)
 
 
 def create_dynamic_rectlight():
@@ -59,5 +60,5 @@ def get_dynamic_material_prim(name: str):
 
 
 async def refresh_dynamic_list(window):
-    button = window.find("**/Button[*].text=='Discover Dynamic Textures'")
+    button = window.find(f"**/Button[*].text=='{window.DISCOVER_TEX_BTN_TXT}'")
     await button.click()

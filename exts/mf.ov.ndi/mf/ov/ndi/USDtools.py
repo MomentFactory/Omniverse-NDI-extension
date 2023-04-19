@@ -3,7 +3,6 @@ from .bindings import DynamicPrim
 import logging
 import numpy as np
 import omni.ext
-
 from pxr import Usd, UsdGeom, UsdShade, Sdf, UsdLux, Tf
 from typing import List
 from unidecode import unidecode
