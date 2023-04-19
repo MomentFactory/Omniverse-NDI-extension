@@ -54,7 +54,6 @@ class USDToolsUnitTest(omni.kit.test.AsyncTestCase):
     async def test_set_property_bandwidth(self):
         material = create_dynamic_material()
         path = material.GetPath()
-        print(f"POTATOE={material}")
         USDtools.set_prim_lowbandwidth_attribute(path, True)
 
         attr = material.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
