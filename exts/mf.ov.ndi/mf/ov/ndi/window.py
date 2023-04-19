@@ -44,6 +44,7 @@ class Window(ui.Window):
                                                self._ndi_status_change_evt_callback))
         self._sub.append(EventSystem.subscribe(EventSystem.STREAM_STOP_TIMEOUT_EVENT,
                                                self._stream_stop_timeout_evt_callback))
+        self._sub.append(USDtools.subscribe_to_stage_events(self._stage_event_evt_callback))
 
     def _unsubscribe(self):
         for sub in self._sub:
@@ -57,6 +58,7 @@ class Window(ui.Window):
                 self._ui_section_header()
                 self._ui_section_bindings()
 
+# region events callback
     def _bindings_updated_evt_callback(self, e: carb.events.IEvent):
         self.frame.rebuild()
 
@@ -68,7 +70,7 @@ class Window(ui.Window):
         self._model.apply_new_binding_source(dynamic_id, value)
         self._model.set_ndi_source_prim_attr(dynamic_id, value)
 
-        if (len(self._bindingPanels) > 0):
+        if (len(self._bindingPanels) > panel_index):
             self._bindingPanels[panel_index].combobox_item_changed()
 
     def _ndi_sources_changed_evt_callback(self, e: carb.events.IEvent):
@@ -82,6 +84,11 @@ class Window(ui.Window):
     def _stream_stop_timeout_evt_callback(self, e: carb.events.IEvent):
         panel: BindingPanel = next(x for x in self._bindingPanels if x.get_dynamic_id() == e.payload["dynamic_id"])
         panel.on_stop_stream()
+
+    def _stage_event_evt_callback(self, e: carb.events.IEvent):
+        if USDtools.is_StageEventType_OPENED(e.type):
+            self._model.search_for_dynamic_material()
+# endregion
 
 # region UI
     def _ui_section_header(self):

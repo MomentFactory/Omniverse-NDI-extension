@@ -146,3 +146,15 @@ class USDtools():
             logger.error(f"Could not set the bandwidth attribute of prim at {path}")
 
         prim.CreateAttribute(USDtools.ATTR_BANDWIDTH_NAME, Sdf.ValueTypeNames.Bool).Set(value)
+
+# region stage events
+    def subscribe_to_stage_events(callback):
+        return (
+            omni.usd.get_context()
+            .get_stage_event_stream()
+            .create_subscription_to_pop(callback, name="mf.ov.ndi.STAGE_EVENT")
+        )
+
+    def is_StageEventType_OPENED(type) -> bool:
+        return type == int(omni.usd.StageEventType.OPENED)
+# endregion

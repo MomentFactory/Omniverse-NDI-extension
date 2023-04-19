@@ -49,3 +49,4 @@ You may want to use [example.usda](./example.usda) in Create for your first test
 - Currently implemented with Python, performance could be greatly improved with C++ (but limited by DynamicTextureProvider implementation)
 - You can ignore warnings in the form of `[Warning] [omni.hydra] Material parameter '...' was assigned to incompatible texture: '...'`
 - You can ignore warnings in the form of `[Warning] [omni.ext._impl._internal] mf.ov.ndi-... -> <class 'mf.ov.ndi...'>: extension object is still alive, something holds a reference on it...`
+- You can ignore the first istance of `[Warning] Could not get stage`, because the extension loads before the stage is initialized
