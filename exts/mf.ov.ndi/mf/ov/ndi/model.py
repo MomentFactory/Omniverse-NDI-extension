@@ -14,6 +14,7 @@ class Model():
         self._ndi: NDItools = NDItools()
 
     def destroy(self):
+        self._ndi.destroy()
         self._bindings_model.destroy()
 
 # region bindings
