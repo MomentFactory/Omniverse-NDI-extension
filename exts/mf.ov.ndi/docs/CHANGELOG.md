@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 - NDI® source monitoring (dimensions, fps, etc.)
 
+## [0.11.0] - 2023-04-20
+
+### Changed
+- NDI® status now displayed as a dot with colors
+    - red: NDI® source offline
+    - white: NDI® source online
+    - green: Stream playing
+    - orange: NDI® drops
+- Code refactor
+
 ## [0.10.0] - 2023-04-12
 
 ### Added
