@@ -46,7 +46,7 @@ You may want to use [example.usda](./example.usda) in Create for your first test
 - [ndi-python](https://github.com/buresu/ndi-python)
 
 ## Known issues
-- The list of dynamic textures is not automatically refreshed when the stage change (create/load new scene, delete material in the stage, etc.), you'll need to manually update the list by clicking the corresponding button in the extension window.
 - Currently implemented with Python, performance could be greatly improved with C++ (but limited by DynamicTextureProvider implementation)
 - You can ignore warnings in the form of `[Warning] [omni.hydra] Material parameter '...' was assigned to incompatible texture: '...'`
 - You can ignore warnings in the form of `[Warning] [omni.ext._impl._internal] mf.ov.ndi-... -> <class 'mf.ov.ndi...'>: extension object is still alive, something holds a reference on it...`
+- You can ignore the first istance of `[Warning] Could not get stage`, because the extension loads before the stage is initialized

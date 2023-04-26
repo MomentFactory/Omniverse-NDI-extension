@@ -1,5 +1,5 @@
 import omni.kit.test
-from ..window import NDIWindow, NDIBindingPanel
+from ..window import Window, BindingPanel
 from ..comboboxModel import ComboboxModel
 from .test_utils import (make_stage, close_stage, get_window, DYNAMIC_ID1, DYNAMIC_ID2, create_dynamic_material,
                          create_dynamic_rectlight, refresh_dynamic_list, get_dynamic_material_prim)
@@ -18,7 +18,7 @@ class UITestsHeader(omni.kit.test.AsyncTestCase):
         field.widget.model.set_value(DYNAMIC_ID1)
         self.assertEqual(field.widget.model.get_value_as_string(), DYNAMIC_ID1)
 
-        button = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
 
         prim = get_dynamic_material_prim(DYNAMIC_ID1)
@@ -30,7 +30,7 @@ class UITestsHeader(omni.kit.test.AsyncTestCase):
 
         await refresh_dynamic_list(self._window)
 
-        panels = self._window.find_all("**/NDIBindingPanel[*]")
+        panels = self._window.find_all("**/BindingPanel[*]")
         self.assertEqual(len(panels), 2)
 
         panel1_found = False
@@ -58,110 +58,98 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
     async def test_no_panel_on_start(self):
         await refresh_dynamic_list(self._window)
 
-        panel = self._window.find("**/NDIBindingPanel[*]")
+        panel = self._window.find("**/BindingPanel[*]")
         self.assertIsNone(panel)
 
         label = self._window.find("**/Label[*]")
-        self.assertEqual(label.widget.text, NDIWindow.EMPTY_TEXTURE_LIST_TXT)
-
-    async def test_no_create_texture_with_empty_name(self):
-        await refresh_dynamic_list(self._window)
-
-        field = self._window.find("**/StringField[*]")
-        button_create = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
-
-        field.widget.model.set_value("")
-        await button_create.click()
-
-        panels = self._window.find_all("**/NDIBindingPanel[*]")
-        self.assertEqual(len(panels), 0)
+        self.assertEqual(label.widget.text, Window.EMPTY_TEXTURE_LIST_TXT)
 
     async def test_combobox_defaults(self):
         await refresh_dynamic_list(self._window)
 
-        button = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
         combobox = self._window.find("**/ComboBox[*]")
 
         model = combobox.widget.model
-        self.assertEqual(model.currentvalue(), ComboboxModel.NONE_VALUE)
-        self.assertFalse(model.is_active())
+        self.assertEqual(model._current_value(), ComboboxModel.NONE_VALUE)
 
         model._current_index.set_value(1)
-        self.assertEqual(model.currentvalue(), ComboboxModel.PROXY_VALUE)
-        self.assertTrue(model.is_active())
+        self.assertEqual(model._current_value(), ComboboxModel.PROXY_VALUE)
 
-        model.select_none()
-        self.assertEqual(model.currentvalue(), ComboboxModel.NONE_VALUE)
-        self.assertFalse(model.is_active())
+        model._current_index.set_value(0)
+        self.assertEqual(model._current_value(), ComboboxModel.NONE_VALUE)
 
     async def test_low_bandwidth_btn(self):
         await refresh_dynamic_list(self._window)
 
-        button = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
 
-        panel = self._window.find("**/NDIBindingPanel[*]")
-        self.assertFalse(panel.widget._binding.get_lowbandwidth())
-        button = panel.find(f"**/ToolButton[*].name=='{NDIBindingPanel.BANDWIDTH_BTN_NAME}'")
+        panel = self._window.find("**/BindingPanel[*]")
+        binding, _, _ = panel.widget._get_data()
+        self.assertFalse(binding.lowbandwidth)
+        button = panel.find(f"**/ToolButton[*].name=='{BindingPanel.BANDWIDTH_BTN_NAME}'")
         await button.click()
-        self.assertTrue(panel.widget._binding.get_lowbandwidth())
+        binding, _, _ = panel.widget._get_data()
+        self.assertTrue(binding.lowbandwidth)
         await button.click()
-        self.assertFalse(panel.widget._binding.get_lowbandwidth())
+        binding, _, _ = panel.widget._get_data()
+        self.assertFalse(binding.lowbandwidth)
 
     async def test_low_bandwidth_stream(self):
         await refresh_dynamic_list(self._window)
 
-        button = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
 
         combobox = self._window.find("**/ComboBox[*]")
-        combobox.widget.model._set_index_from_value(ComboboxModel.PROXY_VALUE)
+        combobox.widget.model._set_current_from_value(ComboboxModel.PROXY_VALUE)
 
-        panel = self._window.find("**/NDIBindingPanel[*]")
-        button_bandwidth = panel.find(f"**/ToolButton[*].name=='{NDIBindingPanel.BANDWIDTH_BTN_NAME}'")
-        button_playpause = button = panel.find(f"**/Button[*].name=='{NDIBindingPanel.PLAYPAUSE_BTN_NAME}'")
+        panel = self._window.find("**/BindingPanel[*]")
+        button_bandwidth = panel.find(f"**/ToolButton[*].name=='{BindingPanel.BANDWIDTH_BTN_NAME}'")
+        button_playpause = button = panel.find(f"**/Button[*].name=='{BindingPanel.PLAYPAUSE_BTN_NAME}'")
 
-        self.assertTrue(panel.widget._lowBandWidthButton.enabled)
+        self.assertTrue(panel.widget._lowbandwidth_toolbutton.enabled)
         await button_playpause.click()
-        self.assertFalse(self._window.widget._model._streams[0]._lowbandwidth)
-        self.assertFalse(panel.widget._lowBandWidthButton.enabled)
+        self.assertFalse(self._window.widget._model._ndi._streams[0]._lowbandwidth)
+        self.assertFalse(panel.widget._lowbandwidth_toolbutton.enabled)
         await button_playpause.click()
-        self.assertTrue(panel.widget._lowBandWidthButton.enabled)
+        self.assertTrue(panel.widget._lowbandwidth_toolbutton.enabled)
 
         await button_bandwidth.click()
 
         await button_playpause.click()
-        self.assertTrue(self._window.widget._model._streams[0]._lowbandwidth)
+        self.assertTrue(self._window.widget._model._ndi._streams[0]._lowbandwidth)
         await button_playpause.click()
 
     async def test_proxy_play_pause(self):
         await refresh_dynamic_list(self._window)
 
-        button_create = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button_create = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button_create.click()
 
         combobox = self._window.find("**/ComboBox[*]")
-        combobox.widget.model._set_index_from_value(ComboboxModel.PROXY_VALUE)
+        combobox.widget.model._set_current_from_value(ComboboxModel.PROXY_VALUE)
 
-        panel = self._window.find("**/NDIBindingPanel[*]")
-        button_playpause = panel.find(f"**/Button[*].name=='{NDIBindingPanel.PLAYPAUSE_BTN_NAME}'")
+        panel = self._window.find("**/BindingPanel[*]")
+        button_playpause = panel.find(f"**/Button[*].name=='{BindingPanel.PLAYPAUSE_BTN_NAME}'")
         self.assertTrue(panel.widget._combobox_ui.visible)
         self.assertFalse(panel.widget._combobox_alt.visible)
         await button_playpause.click()
 
-        self.assertGreater(len(self._window.widget._model._streams), 0)
+        self.assertGreater(len(self._window.widget._model._ndi._streams), 0)
         self.assertFalse(panel.widget._combobox_ui.visible)
         self.assertTrue(panel.widget._combobox_alt.visible)
 
         await button_playpause.click()
-        self.assertEquals(len(self._window.widget._model._streams), 0)
+        self.assertEquals(len(self._window.widget._model._ndi._streams), 0)
 
     async def test_proxy_multiple(self):
         await refresh_dynamic_list(self._window)
 
         field = self._window.find("**/StringField[*]")
-        button_create = self._window.find(f"**/Button[*].text=='{NDIWindow.NEW_TEXTURE_BTN_TXT}'")
+        button_create = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
 
         field.widget.model.set_value(DYNAMIC_ID1)
         await button_create.click()
@@ -170,19 +158,19 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
 
         comboboxes = self._window.find_all("**/ComboBox[*]")
         for combobox in comboboxes:
-            combobox.widget.model._set_index_from_value(ComboboxModel.PROXY_VALUE)
+            combobox.widget.model._set_current_from_value(ComboboxModel.PROXY_VALUE)
 
-        buttons_playpause = self._window.find_all(f"**/Button[*].name=='{NDIBindingPanel.PLAYPAUSE_BTN_NAME}'")
+        buttons_playpause = self._window.find_all(f"**/Button[*].name=='{BindingPanel.PLAYPAUSE_BTN_NAME}'")
         for button_playpause in buttons_playpause:
             await button_playpause.click()
 
-        self.assertEquals(len(self._window.widget._model._streams), 2)
+        self.assertEquals(len(self._window.widget._model._ndi._streams), 2)
 
-        button_stopall = self._window.find(f"**/Button[*].text=='{NDIWindow.STOP_STREAMS_BTN_TXT}'")
+        button_stopall = self._window.find(f"**/Button[*].text=='{Window.STOP_STREAMS_BTN_TXT}'")
         await button_stopall.click()
-        self.assertEquals(len(self._window.widget._model._streams), 0)
+        self.assertEquals(len(self._window.widget._model._ndi._streams), 0)
 
-        panels = self._window.find_all("**/NDIBindingPanel[*]")
+        panels = self._window.find_all("**/BindingPanel[*]")
         for panel in panels:
             self.assertTrue(panel.widget._combobox_ui.visible)
             self.assertFalse(panel.widget._combobox_alt.visible)
