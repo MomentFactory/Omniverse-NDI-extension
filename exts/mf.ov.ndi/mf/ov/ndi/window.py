@@ -142,8 +142,8 @@ class Window(ui.Window):
         self._model.apply_lowbandwidth_value(dynamic_id, value)
         self._model.set_lowbandwidth_prim_attr(dynamic_id, value)
 
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool) -> bool:
-        return self._model.try_add_stream(binding, lowbandwidth)
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, fps_text_field: ui.Label) -> bool:
+        return self._model.try_add_stream(binding, lowbandwidth, fps_text_field)
 
     def stop_stream(self, binding: Binding):
         return self._model.stop_stream(binding)
@@ -184,6 +184,7 @@ class BindingPanel(ui.CollapsableFrame):
                 self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20)
                 self._set_ndi_status_icon(ndi.active)
 
+                self._fps_field = ui.Label("N/A fps", width=110)
                 self._combobox_alt = ui.Label("")
                 self._set_combobox_alt_text(binding.ndi_source)
                 self._combobox_alt.visible = False
@@ -253,7 +254,7 @@ class BindingPanel(ui.CollapsableFrame):
             self._window.stop_stream(binding)
             self.on_stop_stream()
         else:
-            if self._window.try_add_stream(binding, self._lowbandwidth_value):
+            if self._window.try_add_stream(binding, self._lowbandwidth_value, self._fps_field):
                 self._on_play_stream()
 
     def _set_combobox_alt_text(self, text: str):

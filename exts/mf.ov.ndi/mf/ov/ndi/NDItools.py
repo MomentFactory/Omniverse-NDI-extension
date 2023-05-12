@@ -80,8 +80,8 @@ class NDItools():
     def get_stream(self, dynamic_id):
         return next((x for x in self._streams if x.get_id() == dynamic_id), None)
 
-    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool) -> bool:
-        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self)
+    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, fps_text_field) -> bool:
+        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self, fps_text_field)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {ndi_source}")
@@ -90,8 +90,9 @@ class NDItools():
         self._streams.append(stream)
         return True
 
-    def try_add_stream_proxy(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool) -> bool:
-        stream: NDIVideoStreamProxy = NDIVideoStreamProxy(dynamic_id, ndi_source, fps, lowbandwidth)
+    def try_add_stream_proxy(self, dynamic_id: str, ndi_source: str, fps: float,
+                             lowbandwidth: bool, fps_text_field) -> bool:
+        stream: NDIVideoStreamProxy = NDIVideoStreamProxy(dynamic_id, ndi_source, fps, lowbandwidth, fps_text_field)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {ndi_source}")
@@ -145,12 +146,16 @@ class NDIfinder():
 class NDIVideoStream():
     NO_FRAME_TIMEOUT = 5  # seconds
 
-    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools):
+    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools, fps_text_field):
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
         self._thread: threading.Thread = None
         self._ndi_recv = None
+
+        self._fps_text_field = fps_text_field
+        self._fps_avg = 0.0
+        self._fps_count = 0.0
 
         self.is_ok = False
 
@@ -189,6 +194,7 @@ class NDIVideoStream():
         self.is_ok = True
 
     def destroy(self):
+        self._fps_text_field.text = "avg {:.2f} fps".format(self._fps_avg / self._fps_count)
         self._is_running = False
         self._thread.join()
         self._thread = None
@@ -221,6 +227,9 @@ class NDIVideoStream():
         fps = 120.0
         no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
 
+        self._fps_avg = 0
+        self._fps_count = 0
+
         carb.profiler.end(0)
         while self._is_running:
             carb.profiler.begin(1, 'Omniverse NDI®::loop outer')
@@ -230,6 +239,8 @@ class NDIVideoStream():
                 carb.profiler.end(1)
                 continue
             carb.profiler.begin(2, 'Omniverse NDI®::loop inner')
+            actual_fps = 1.0 / time_delta
+            self._fps_text_field.text = "{:.2f} ".format(actual_fps) + "/ {:.2f} fps".format(fps)
             last_read = now
 
             carb.profiler.begin(3, 'Omniverse NDI®::receive frame')
@@ -246,6 +257,8 @@ class NDIVideoStream():
                 dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
                 carb.profiler.end(4)
+                self._fps_avg += actual_fps
+                self._fps_count += 1
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1
@@ -259,12 +272,16 @@ class NDIVideoStream():
 
 
 class NDIVideoStreamProxy():
-    def __init__(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool):
+    def __init__(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool, fps_text_field):
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._fps = fps
         self._lowbandwidth = lowbandwidth
         self._thread: threading.Thread = None
+
+        self._fps_text_field = fps_text_field
+        self._fps_avg = 0.0
+        self._fps_count = 0.0
 
         self.is_ok = False
 
@@ -281,6 +298,7 @@ class NDIVideoStreamProxy():
         self.is_ok = True
 
     def destroy(self):
+        self._fps_text_field.text = "avg {:.2f} fps".format(self._fps_avg / self._fps_count)
         self._is_running = False
         self._thread.join()
         self._thread = None
@@ -300,6 +318,8 @@ class NDIVideoStreamProxy():
         frame = np.full((height, width, channels), color, dtype=np.uint8)
 
         last_read = time.time() - 1
+        self._fps_avg = 0
+        self._fps_count = 0
         carb.profiler.end(0)
         while self._is_running:
             carb.profiler.begin(1, 'Omniverse NDI®::Proxy loop outer')
@@ -309,10 +329,15 @@ class NDIVideoStreamProxy():
                 carb.profiler.end(1)
                 continue
             carb.profiler.begin(2, 'Omniverse NDI®::Proxy loop inner')
+            actual_fps = 1.0 / time_delta
+            self._fps_text_field.text = "{:.2f} ".format(actual_fps) + "/ {:.2f} fps".format(fps)
+            self._fps_avg += actual_fps
+            self._fps_count += 1
             last_read = now
 
             carb.profiler.begin(3, 'Omniverse NDI®::set_data')
             dynamic_texture.set_data_array(frame, [width, height, channels])
             carb.profiler.end(3)
+
             carb.profiler.end(2)
             carb.profiler.end(1)
