@@ -156,7 +156,7 @@ class NDIVideoStream():
         self._update_fps_fn = update_fps_fn
         self._fps_current = 0.0
         self._fps_avg_total = 0.0
-        self._fps_avg_count = 0.0
+        self._fps_avg_count = 0
         self._fps_expected = 0.0
 
         self.is_ok = False
@@ -196,7 +196,7 @@ class NDIVideoStream():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
@@ -231,9 +231,10 @@ class NDIVideoStream():
         last_read = time.time() - 1  # Make sure we run on the first frame
         fps = 120.0
         no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
+        index = 0
 
         self._fps_avg_total = 0.0
-        self._fps_avg_count = 1.0  # No division by zero
+        self._fps_avg_count = 0
 
         carb.profiler.end(0)
         while self._is_running:
@@ -245,7 +246,6 @@ class NDIVideoStream():
                 continue
             carb.profiler.begin(2, 'Omniverse NDI®::loop inner')
             self._fps_current = 1.0 / time_delta
-            self._update_fps()
             last_read = now
 
             carb.profiler.begin(3, 'Omniverse NDI®::receive frame')
@@ -256,6 +256,8 @@ class NDIVideoStream():
                 carb.profiler.begin(4, 'Omniverse NDI®::set_data')
                 fps = v.frame_rate_N / v.frame_rate_D
                 self._fps_expected = fps
+                if (index == 0):
+                    self._fps_current = fps
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
                 frame = v.data
                 frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
@@ -265,6 +267,8 @@ class NDIVideoStream():
                 carb.profiler.end(4)
                 self._fps_avg_total += self._fps_current
                 self._fps_avg_count += 1
+                self._update_fps()
+                index += 1
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1
@@ -288,7 +292,7 @@ class NDIVideoStreamProxy():
         self._fps_update_fn = fps_update_fn
         self._fps_current = 0.0
         self._fps_avg_total = 0.0
-        self._fps_avg_count = 0.0
+        self._fps_avg_count = 0
         self._fps_expected = 0.0
 
         self.is_ok = False
@@ -306,7 +310,7 @@ class NDIVideoStreamProxy():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
@@ -330,7 +334,7 @@ class NDIVideoStreamProxy():
 
         last_read = time.time() - 1
         self._fps_avg_total = 0.0
-        self._fps_avg_count = 1.0  # no division by zero
+        self._fps_avg_count = 0
         self._fps_expected = fps
         carb.profiler.end(0)
         while self._is_running:
