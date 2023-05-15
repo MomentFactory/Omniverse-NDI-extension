@@ -57,7 +57,7 @@ class Model():
 # endregion
 
 # region stream
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool, fps_text_field) -> bool:
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn) -> bool:
         if self._ndi.get_stream(binding.dynamic_id) is not None:
             logger = logging.getLogger(__name__)
             logger.warning(f"There's already a stream running for {binding.dynamic_id}")
@@ -71,11 +71,11 @@ class Model():
         if binding.ndi_source == ComboboxModel.PROXY_VALUE:
             fps = float(re.search("\((.*)\)", binding.ndi_source).group(1).split("p")[1])
             success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth,
-                                                           fps_text_field)
+                                                           update_fps_fn)
             return success
         else:
             success: bool = self._ndi.try_add_stream(binding.dynamic_id, binding.ndi_source, lowbandwidth,
-                                                     fps_text_field)
+                                                     update_fps_fn)
             return success
 
     def stop_stream(self, binding: Binding):

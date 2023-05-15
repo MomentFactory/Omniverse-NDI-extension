@@ -4,8 +4,10 @@ from .eventsystem import EventSystem
 from .model import Model
 from .USDtools import USDtools
 
+import asyncio
 import carb.events
 import omni.ui as ui
+import omni.kit.app
 import pyperclip
 from typing import List
 
@@ -30,6 +32,8 @@ class Window(ui.Window):
         self._model.search_for_dynamic_material()
 
     def destroy(self):
+        for panel in self._bindingPanels:
+            panel.destroy()
         self._model.destroy()
         self._unsubscribe()
         super().destroy()
@@ -53,10 +57,9 @@ class Window(ui.Window):
         self._sub.clear()
 
     def _build_fn(self):
-        with self.frame:
-            with ui.VStack(style={"margin": 3}):
-                self._ui_section_header()
-                self._ui_section_bindings()
+        with ui.VStack(style={"margin": 3}):
+            self._ui_section_header()
+            self._ui_section_bindings()
 
 # region events callback
     def _bindings_updated_evt_callback(self, e: carb.events.IEvent):
@@ -142,8 +145,8 @@ class Window(ui.Window):
         self._model.apply_lowbandwidth_value(dynamic_id, value)
         self._model.set_lowbandwidth_prim_attr(dynamic_id, value)
 
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool, fps_text_field: ui.Label) -> bool:
-        return self._model.try_add_stream(binding, lowbandwidth, fps_text_field)
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn) -> bool:
+        return self._model.try_add_stream(binding, lowbandwidth, update_fps_fn)
 
     def stop_stream(self, binding: Binding):
         return self._model.stop_stream(binding)
@@ -179,12 +182,14 @@ class BindingPanel(ui.CollapsableFrame):
 
         super().__init__(binding.dynamic_id, **kwargs)
 
+        self._info_window = None
+
         with self:
             with ui.HStack():
-                self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20)
+                self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20,
+                                             mouse_released_fn=self._show_info_window)
                 self._set_ndi_status_icon(ndi.active)
 
-                self._fps_field = ui.Label("N/A fps", width=110)
                 self._combobox_alt = ui.Label("")
                 self._set_combobox_alt_text(binding.ndi_source)
                 self._combobox_alt.visible = False
@@ -192,8 +197,8 @@ class BindingPanel(ui.CollapsableFrame):
                 self._combobox = ComboboxModel(choices, binding.ndi_source, binding.dynamic_id, self._index)
                 self._combobox_ui = ui.ComboBox(self._combobox)
 
-                self.play_pause_toolbutton = ui.Button(text="", image_url=BindingPanel.PLAY_ICON, height=30, width=30,
-                                                       clicked_fn=self._on_click_play_pause_ndi,
+                self.play_pause_toolbutton = ui.Button(text="", image_url=BindingPanel.PLAY_ICON, height=30,
+                                                       width=30, clicked_fn=self._on_click_play_pause_ndi,
                                                        name=BindingPanel.PLAYPAUSE_BTN_NAME)
                 self._lowbandwidth_toolbutton = ui.ToolButton(image_url=BindingPanel.LOW_BANDWIDTH_ICON, width=30,
                                                               height=30, tooltip="Low bandwidth mode",
@@ -202,6 +207,37 @@ class BindingPanel(ui.CollapsableFrame):
                 self._lowbandwidth_toolbutton.model.set_value(self._lowbandwidth_value)
                 ui.Button("", image_url=BindingPanel.COPY_ICON, width=30, height=30, clicked_fn=self._on_click_copy,
                           tooltip="Copy dynamic texture path(dynamic://*)", name=BindingPanel.COPYPATH_BTN_NAME)
+
+    def destroy(self):
+        self._info_window_destroy()
+
+    # region Info Window
+    def _show_info_window(self, _x, _y, button, _modifier):
+        if (button == 0):  # left click
+            if not self._info_window:
+                self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", width=200, height=120)
+                self._info_window.set_visibility_changed_fn(self._info_window_visibility_changed)
+            elif self._info_window:
+                self._info_window_destroy()
+
+    def _info_window_visibility_changed(self, visible):
+        if not visible:
+            asyncio.ensure_future(self._info_window_destroy_async())
+
+    def _info_window_destroy(self):
+        if self._info_window:
+            self._info_window.destroy()
+            self._info_window = None
+
+    async def _info_window_destroy_async(self):
+        await omni.kit.app.get_app().next_update_async()
+        if self._info_window:
+            self._info_window_destroy()
+
+    def update_fps(self, fps_current: float, fps_average: float, fps_expected: float):
+        if self._info_window:
+            self._info_window.set_values(fps_current, fps_average, fps_expected)
+    # endregion
 
     def combobox_items_changed(self, items: List[str]):
         binding, _, _ = self._get_data()
@@ -254,7 +290,7 @@ class BindingPanel(ui.CollapsableFrame):
             self._window.stop_stream(binding)
             self.on_stop_stream()
         else:
-            if self._window.try_add_stream(binding, self._lowbandwidth_value, self._fps_field):
+            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps):
                 self._on_play_stream()
 
     def _set_combobox_alt_text(self, text: str):
@@ -269,3 +305,32 @@ class BindingPanel(ui.CollapsableFrame):
             self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_WARNING)}
         else:  # not active and not self._is_playing
             self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_INACTIVE)}
+
+
+class StreamInfoWindow(ui.Window):
+    def __init__(self, window_name: str, delegate=None, **kwargs):
+        super().__init__(window_name, **kwargs)
+        self.frame.set_build_fn(self._build_fn)
+
+    def destroy(self):
+        super().destroy()
+
+    def _build_fn(self):
+        with ui.VStack(height=0):
+            with ui.HStack():
+                ui.Label("current fps:")
+                self._fps_current_model = ui.FloatField(enabled=False).model
+                self._fps_current_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("average fps:")
+                self._fps_average_model = ui.FloatField(enabled=False).model
+                self._fps_average_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("expected fps:")
+                self._fps_expected_model = ui.FloatField(enabled=False).model
+                self._fps_expected_model.set_value(0.0)
+
+    def set_values(self, fps_current: float, fps_average: float, fps_expected: float):
+        self._fps_current_model.set_value(fps_current)
+        self._fps_average_model.set_value(fps_average)
+        self._fps_expected_model.set_value(fps_expected)
