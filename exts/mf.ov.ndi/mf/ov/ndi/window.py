@@ -4,8 +4,10 @@ from .eventsystem import EventSystem
 from .model import Model
 from .USDtools import USDtools
 
+import asyncio
 import carb.events
 import omni.ui as ui
+import omni.kit.app
 import pyperclip
 from typing import List
 
@@ -30,6 +32,8 @@ class Window(ui.Window):
         self._model.search_for_dynamic_material()
 
     def destroy(self):
+        for panel in self._bindingPanels:
+            panel.destroy()
         self._model.destroy()
         self._unsubscribe()
         super().destroy()
@@ -53,10 +57,9 @@ class Window(ui.Window):
         self._sub.clear()
 
     def _build_fn(self):
-        with self.frame:
-            with ui.VStack(style={"margin": 3}):
-                self._ui_section_header()
-                self._ui_section_bindings()
+        with ui.VStack(style={"margin": 3}):
+            self._ui_section_header()
+            self._ui_section_bindings()
 
 # region events callback
     def _bindings_updated_evt_callback(self, e: carb.events.IEvent):
@@ -142,8 +145,8 @@ class Window(ui.Window):
         self._model.apply_lowbandwidth_value(dynamic_id, value)
         self._model.set_lowbandwidth_prim_attr(dynamic_id, value)
 
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool) -> bool:
-        return self._model.try_add_stream(binding, lowbandwidth)
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn, update_dimensions_fn) -> bool:
+        return self._model.try_add_stream(binding, lowbandwidth, update_fps_fn, update_dimensions_fn)
 
     def stop_stream(self, binding: Binding):
         return self._model.stop_stream(binding)
@@ -179,9 +182,12 @@ class BindingPanel(ui.CollapsableFrame):
 
         super().__init__(binding.dynamic_id, **kwargs)
 
+        self._info_window = None
+
         with self:
             with ui.HStack():
-                self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20)
+                self._status_icon = ui.Image(BindingPanel.NDI_STATUS, width=20,
+                                             mouse_released_fn=self._show_info_window)
                 self._set_ndi_status_icon(ndi.active)
 
                 self._combobox_alt = ui.Label("")
@@ -191,8 +197,8 @@ class BindingPanel(ui.CollapsableFrame):
                 self._combobox = ComboboxModel(choices, binding.ndi_source, binding.dynamic_id, self._index)
                 self._combobox_ui = ui.ComboBox(self._combobox)
 
-                self.play_pause_toolbutton = ui.Button(text="", image_url=BindingPanel.PLAY_ICON, height=30, width=30,
-                                                       clicked_fn=self._on_click_play_pause_ndi,
+                self.play_pause_toolbutton = ui.Button(text="", image_url=BindingPanel.PLAY_ICON, height=30,
+                                                       width=30, clicked_fn=self._on_click_play_pause_ndi,
                                                        name=BindingPanel.PLAYPAUSE_BTN_NAME)
                 self._lowbandwidth_toolbutton = ui.ToolButton(image_url=BindingPanel.LOW_BANDWIDTH_ICON, width=30,
                                                               height=30, tooltip="Low bandwidth mode",
@@ -201,6 +207,43 @@ class BindingPanel(ui.CollapsableFrame):
                 self._lowbandwidth_toolbutton.model.set_value(self._lowbandwidth_value)
                 ui.Button("", image_url=BindingPanel.COPY_ICON, width=30, height=30, clicked_fn=self._on_click_copy,
                           tooltip="Copy dynamic texture path(dynamic://*)", name=BindingPanel.COPYPATH_BTN_NAME)
+
+    def destroy(self):
+        self._info_window_destroy()
+
+    # region Info Window
+    def _show_info_window(self, _x, _y, button, _modifier):
+        if (button == 0):  # left click
+            binding, _, _ = self._get_data()
+            if not self._info_window:
+                self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", binding.ndi_source,
+                                                     width=280, height=200)
+                self._info_window.set_visibility_changed_fn(self._info_window_visibility_changed)
+            elif self._info_window:
+                self._info_window_destroy()
+
+    def _info_window_visibility_changed(self, visible):
+        if not visible:
+            asyncio.ensure_future(self._info_window_destroy_async())
+
+    def _info_window_destroy(self):
+        if self._info_window:
+            self._info_window.destroy()
+            self._info_window = None
+
+    async def _info_window_destroy_async(self):
+        await omni.kit.app.get_app().next_update_async()
+        if self._info_window:
+            self._info_window_destroy()
+
+    def update_fps(self, fps_current: float, fps_average: float, fps_expected: float):
+        if self._info_window:
+            self._info_window.set_fps_values(fps_current, fps_average, fps_expected)
+
+    def update_details(self, width: int, height: int, color_format: str):
+        if self._info_window:
+            self._info_window.set_stream_details(width, height, color_format)
+    # endregion
 
     def combobox_items_changed(self, items: List[str]):
         binding, _, _ = self._get_data()
@@ -214,6 +257,8 @@ class BindingPanel(ui.CollapsableFrame):
         binding, _, ndi = self._get_data()
         self._set_combobox_alt_text(binding.ndi_source)
         self._set_ndi_status_icon(ndi.active)
+        if self._info_window:
+            self._info_window.set_stream_name(binding.ndi_source)
 
     def get_dynamic_id(self) -> str:
         return self._dynamic_id
@@ -253,7 +298,7 @@ class BindingPanel(ui.CollapsableFrame):
             self._window.stop_stream(binding)
             self.on_stop_stream()
         else:
-            if self._window.try_add_stream(binding, self._lowbandwidth_value):
+            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps, self.update_details):
                 self._on_play_stream()
 
     def _set_combobox_alt_text(self, text: str):
@@ -268,3 +313,72 @@ class BindingPanel(ui.CollapsableFrame):
             self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_WARNING)}
         else:  # not active and not self._is_playing
             self._status_icon.style = {"color": ui.color(BindingPanel.NDI_COLOR_INACTIVE)}
+
+
+class StreamInfoWindow(ui.Window):
+    def __init__(self, dynamic_id: str, ndi_id: str, delegate=None, **kwargs):
+        super().__init__(dynamic_id, **kwargs)
+        self.frame.set_build_fn(self._build_fn)
+        self._stream_name = ndi_id
+
+    def destroy(self):
+        super().destroy()
+
+    def _build_fn(self):
+        with ui.VStack(height=0):
+            with ui.HStack():
+                ui.Label("Stream name:")
+                self._stream_name_model = ui.StringField(enabled=False).model
+                self._stream_name_model.set_value(self._stream_name)
+            with ui.HStack():
+                ui.Label("Current fps:")
+                self._fps_current_model = ui.FloatField(enabled=False).model
+                self._fps_current_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("Average fps:")
+                self._fps_average_model = ui.FloatField(enabled=False).model
+                self._fps_average_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("Expected fps:")
+                self._fps_expected_model = ui.FloatField(enabled=False).model
+                self._fps_expected_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("Width:")
+                self._dimensions_width_model = ui.IntField(enabled=False).model
+                self._dimensions_width_model.set_value(0)
+            with ui.HStack():
+                ui.Label("Height:")
+                self._dimensions_height_model = ui.IntField(enabled=False).model
+                self._dimensions_height_model.set_value(0)
+            with ui.HStack():
+                ui.Label("Stream name:")
+                self._color_format_model = ui.StringField(enabled=False).model
+                self._color_format_model.set_value("")
+
+    def set_fps_values(self, fps_current: float, fps_average: float, fps_expected: float):
+        # If this property exists, all the other do as well since its the last one to be initialized
+        if hasattr(self, "_fps_expected_model"):
+            self._fps_current_model.set_value(fps_current)
+            self._fps_average_model.set_value(fps_average)
+            self._fps_expected_model.set_value(fps_expected)
+
+    def set_stream_name(self, name: str):
+        # No need to check if attribute exists because no possibility of concurrency between build fn and caller
+        self._stream_name_model.set_value(name)
+
+        # Reset other values
+        self._fps_current_model.set_value(0.0)
+        self._fps_average_model.set_value(0.0)
+        self._fps_expected_model.set_value(0.0)
+        self._dimensions_width_model.set_value(0)
+        self._dimensions_height_model.set_value(0)
+        self._color_format_model.set_value("")
+
+    def set_stream_details(self, width: int, height: int, color_format: str):
+        if hasattr(self, "_color_format_model"):
+            self._dimensions_width_model.set_value(width)
+            self._dimensions_height_model.set_value(height)
+
+            # Original format is similar to FourCCVideoType.FOURCC_VIDEO_TYPE_RGBA, we want to display only "RGBA"
+            color_format_simple = color_format.split("_")[-1]
+            self._color_format_model.set_value(color_format_simple)
