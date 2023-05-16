@@ -214,8 +214,10 @@ class BindingPanel(ui.CollapsableFrame):
     # region Info Window
     def _show_info_window(self, _x, _y, button, _modifier):
         if (button == 0):  # left click
+            binding, _, _ = self._get_data()
             if not self._info_window:
-                self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", width=200, height=120)
+                self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", binding.ndi_source,
+                                                     width=280, height=140)
                 self._info_window.set_visibility_changed_fn(self._info_window_visibility_changed)
             elif self._info_window:
                 self._info_window_destroy()
@@ -236,7 +238,7 @@ class BindingPanel(ui.CollapsableFrame):
 
     def update_fps(self, fps_current: float, fps_average: float, fps_expected: float):
         if self._info_window:
-            self._info_window.set_values(fps_current, fps_average, fps_expected)
+            self._info_window.set_fps_values(fps_current, fps_average, fps_expected)
     # endregion
 
     def combobox_items_changed(self, items: List[str]):
@@ -251,6 +253,8 @@ class BindingPanel(ui.CollapsableFrame):
         binding, _, ndi = self._get_data()
         self._set_combobox_alt_text(binding.ndi_source)
         self._set_ndi_status_icon(ndi.active)
+        if self._info_window:
+            self._info_window.set_stream_name(binding.ndi_source)
 
     def get_dynamic_id(self) -> str:
         return self._dynamic_id
@@ -308,15 +312,20 @@ class BindingPanel(ui.CollapsableFrame):
 
 
 class StreamInfoWindow(ui.Window):
-    def __init__(self, window_name: str, delegate=None, **kwargs):
-        super().__init__(window_name, **kwargs)
+    def __init__(self, dynamic_id: str, ndi_id: str, delegate=None, **kwargs):
+        super().__init__(dynamic_id, **kwargs)
         self.frame.set_build_fn(self._build_fn)
+        self._stream_name = ndi_id
 
     def destroy(self):
         super().destroy()
 
     def _build_fn(self):
         with ui.VStack(height=0):
+            with ui.HStack():
+                ui.Label("Stream name:")
+                self._stream_name_model = ui.StringField(enabled=False).model
+                self._stream_name_model.set_value(self._stream_name)
             with ui.HStack():
                 ui.Label("current fps:")
                 self._fps_current_model = ui.FloatField(enabled=False).model
@@ -330,8 +339,11 @@ class StreamInfoWindow(ui.Window):
                 self._fps_expected_model = ui.FloatField(enabled=False).model
                 self._fps_expected_model.set_value(0.0)
 
-    def set_values(self, fps_current: float, fps_average: float, fps_expected: float):
+    def set_fps_values(self, fps_current: float, fps_average: float, fps_expected: float):
         if hasattr(self, "_fps_expected_model"):
             self._fps_current_model.set_value(fps_current)
             self._fps_average_model.set_value(fps_average)
             self._fps_expected_model.set_value(fps_expected)
+
+    def set_stream_name(self, name: str):
+        self._stream_name_model.set_value(name)
