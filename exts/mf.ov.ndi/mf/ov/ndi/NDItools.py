@@ -11,7 +11,6 @@ import time
 
 from typing import List
 
-from PIL import Image
 
 class NDItools():
     def __init__(self):
