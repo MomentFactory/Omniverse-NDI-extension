@@ -122,13 +122,18 @@ class Window(ui.Window):
 
 # region controls
     def _on_click_create_dynamic_material(self):
+        self._stop_all_streams()
         name: str = self._dynamic_name.model.get_value_as_string()
         self._model.create_dynamic_material(name)
 
     def _on_click_refresh_materials(self):
+        self._stop_all_streams()
         self._model.search_for_dynamic_material()
 
     def _on_click_stop_all_streams(self):
+        self._stop_all_streams()
+
+    def _stop_all_streams(self):
         self._model.stop_all_streams()
         for panel in self._bindingPanels:
             panel.on_stop_stream()
