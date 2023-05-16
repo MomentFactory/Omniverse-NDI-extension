@@ -331,6 +331,7 @@ class StreamInfoWindow(ui.Window):
                 self._fps_expected_model.set_value(0.0)
 
     def set_values(self, fps_current: float, fps_average: float, fps_expected: float):
-        self._fps_current_model.set_value(fps_current)
-        self._fps_average_model.set_value(fps_average)
-        self._fps_expected_model.set_value(fps_expected)
+        if hasattr(self, "_fps_expected_model"):
+            self._fps_current_model.set_value(fps_current)
+            self._fps_average_model.set_value(fps_average)
+            self._fps_expected_model.set_value(fps_expected)
