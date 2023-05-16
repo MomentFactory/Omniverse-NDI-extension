@@ -46,7 +46,7 @@ class MFOVNdiExtension(omni.ext.IExt):
         if not visible:
             asyncio.ensure_future(self._destroy_window_async())
 
-    def _show_window(self, menu, value):
+    def _show_window(self, _, value):
         if value:
             self._window = Window(width=800, height=275)
             self._window.set_visibility_changed_fn(self._visibility_changed_fn)

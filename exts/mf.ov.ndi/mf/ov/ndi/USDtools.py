@@ -21,7 +21,7 @@ class USDtools():
     def make_name_valid(name: str) -> str:
         return Tf.MakeValidIdentifier(unidecode(name))
 
-    def create_dynamic_material(name: str):
+    def create_dynamic_material(safename: str):
         stage = USDtools.get_stage()
         if not stage:
             logger = logging.getLogger(__name__)
@@ -30,11 +30,6 @@ class USDtools():
 
         scope_path: str = f"{stage.GetDefaultPrim().GetPath()}/{USDtools.SCOPE_NAME}"
         UsdGeom.Scope.Define(stage, scope_path)
-
-        safename = USDtools.make_name_valid(name)
-        if name != safename:
-            logger = logging.getLogger(__name__)
-            logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
 
         USDtools._create_material_and_shader(stage, scope_path, safename)
         USDtools._fill_dynamic_with_magenta(safename)

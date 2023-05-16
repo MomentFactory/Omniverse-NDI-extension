@@ -36,7 +36,17 @@ class Model():
 
 # region dynamic
     def create_dynamic_material(self, name: str):
-        USDtools.create_dynamic_material(name)
+        safename = USDtools.make_name_valid(name)
+        if name != safename:
+            logger = logging.getLogger(__name__)
+            logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
+
+        if self._bindings_model.find_binding_from_id(safename) is not None:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"There's already a texture with the name {safename}")
+            return
+
+        USDtools.create_dynamic_material(safename)
         self.search_for_dynamic_material()
 
     def search_for_dynamic_material(self):
@@ -57,7 +67,7 @@ class Model():
 # endregion
 
 # region stream
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool) -> bool:
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn, update_dimensions_fn) -> bool:
         if self._ndi.get_stream(binding.dynamic_id) is not None:
             logger = logging.getLogger(__name__)
             logger.warning(f"There's already a stream running for {binding.dynamic_id}")
@@ -70,10 +80,12 @@ class Model():
 
         if binding.ndi_source == ComboboxModel.PROXY_VALUE:
             fps = float(re.search("\((.*)\)", binding.ndi_source).group(1).split("p")[1])
-            success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth)
+            success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth,
+                                                           update_fps_fn, update_dimensions_fn)
             return success
         else:
-            success: bool = self._ndi.try_add_stream(binding.dynamic_id, binding.ndi_source, lowbandwidth)
+            success: bool = self._ndi.try_add_stream(binding.dynamic_id, binding.ndi_source, lowbandwidth,
+                                                     update_fps_fn, update_dimensions_fn)
             return success
 
     def stop_stream(self, binding: Binding):
