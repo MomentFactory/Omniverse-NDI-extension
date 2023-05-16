@@ -93,8 +93,9 @@ class NDItools():
         return True
 
     def try_add_stream_proxy(self, dynamic_id: str, ndi_source: str, fps: float,
-                             lowbandwidth: bool, update_fps_fn) -> bool:
-        stream: NDIVideoStreamProxy = NDIVideoStreamProxy(dynamic_id, ndi_source, fps, lowbandwidth, update_fps_fn)
+                             lowbandwidth: bool, update_fps_fn, update_dimensions_fn) -> bool:
+        stream: NDIVideoStreamProxy = NDIVideoStreamProxy(dynamic_id, ndi_source, fps, lowbandwidth,
+                                                          update_fps_fn, update_dimensions_fn)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {ndi_source}")
@@ -295,7 +296,7 @@ class NDIVideoStreamProxy():
         self._lowbandwidth = lowbandwidth
         self._thread: threading.Thread = None
 
-        self._fps_update_fn = fps_update_fn
+        self._update_fps_fn = fps_update_fn
         self._fps_current = 0.0
         self._fps_avg_total = 0.0
         self._fps_avg_count = 0
