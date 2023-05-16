@@ -36,7 +36,17 @@ class Model():
 
 # region dynamic
     def create_dynamic_material(self, name: str):
-        USDtools.create_dynamic_material(name)
+        safename = USDtools.make_name_valid(name)
+        if name != safename:
+            logger = logging.getLogger(__name__)
+            logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
+
+        if self._bindings_model.find_binding_from_id(safename) is not None:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"There's already a texture with the name {safename}")
+            return
+
+        USDtools.create_dynamic_material(safename)
         self.search_for_dynamic_material()
 
     def search_for_dynamic_material(self):
