@@ -3,6 +3,8 @@ import omni.kit.ui_test as ui_test
 from pxr import Usd, UsdLux, UsdShade
 from ..USDtools import USDtools
 from ..window import Window
+from ..eventsystem import EventSystem
+from ..comboboxModel import ComboboxModel
 
 SOURCE1 = "MY-PC (Test Pattern)"
 SOURCE2 = "MY-PC (Test Pattern 2)"
@@ -62,3 +64,7 @@ def get_dynamic_material_prim(name: str):
 async def refresh_dynamic_list(window):
     button = window.find(f"**/Button[*].text=='{Window.DISCOVER_TEX_BTN_TXT}'")
     await button.click()
+
+
+def add_proxy_source(window):
+    EventSystem.send_event(EventSystem.NDIFINDER_NEW_SOURCES, payload={"sources": [ComboboxModel.PROXY_VALUE]})

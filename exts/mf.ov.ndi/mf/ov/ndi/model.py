@@ -80,8 +80,7 @@ class Model():
 
         if binding.ndi_source == ComboboxModel.PROXY_VALUE:
             fps = float(re.search("\((.*)\)", binding.ndi_source).group(1).split("p")[1])
-            success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth,
-                                                           update_fps_fn, update_dimensions_fn)
+            success: bool = self._ndi.try_add_stream_proxy(binding.dynamic_id, binding.ndi_source, fps, lowbandwidth)
             return success
         else:
             success: bool = self._ndi.try_add_stream(binding.dynamic_id, binding.ndi_source, lowbandwidth,
