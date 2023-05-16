@@ -154,7 +154,7 @@ class NDIVideoStream():
     def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools,
                  update_fps_fn, update_dimensions_fn):
         wp.init()
-        wp.config.verify_cuda = Tru
+
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
@@ -222,13 +222,13 @@ class NDIVideoStream():
 
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_HIGHEST
         return recv_create_desc
 
     def get_recv_low_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_LOWEST
         return recv_create_desc
 
@@ -245,7 +245,6 @@ class NDIVideoStream():
         self._fps_avg_total = 0.0
         self._fps_avg_count = 0
 
-        isGPU = True
         carb.profiler.end(0)
         while self._is_running:
             carb.profiler.begin(1, 'Omniverse NDI®::loop outer')
@@ -271,29 +270,29 @@ class NDIVideoStream():
                     self._fps_current = fps
                 color_format = v.FourCC
                 frame = v.data
-                height, width, channels = frame.shape
+                height, width, channels = v.data.shape
 
+                isGPU = height == width
                 carb.profiler.end(3)
                 if isGPU:
                     carb.profiler.begin(3, 'Omniverse NDI®::begin gpu')
                     with wp.ScopedDevice("cuda"):
-                        shouldResize = width != height
-                        if shouldResize:
-                            carb.profiler.begin(4, 'Omniverse NDI®::begin cpu resize')
-                            frame = np.resize(frame, (width, width, channels))
-                            carb.profiler.end(4)
+                        # CUDA doesnt handle non square texture well, so we need to resize if the te
+                        # We are keeping this code in case we find a workaround
+                        #
+                        #    carb.profiler.begin(4, 'Omniverse NDI®::begin cpu resize')
+                        #    frame = np.resize(frame, (width, width, channels))
+                        #    carb.profiler.end(4)
 
-                        # Blit
+                        # 38 ms
                         carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
-
                         pixels_data = wp.from_numpy(frame, dtype=wp.uint8, device="cuda")
-                        #wp.synchronize()
-
                         carb.profiler.end(4)
 
-                        carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
+                        # 1 ms
+                        carb.profiler.begin(4, 'Omniverse NDI®::create gpu texture')
                         self._update_dimensions_fn(width, height, str(color_format))
-                        dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, round(height*shrinkFactor)])
+                        dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, width])
                         carb.profiler.end(4)
 
                     carb.profiler.end(3)
@@ -306,12 +305,10 @@ class NDIVideoStream():
                 ndi.recv_free_video_v2(self._ndi_recv, v)
                 carb.profiler.end(3)
 
-
                 self._fps_avg_total += self._fps_current
                 self._fps_avg_count += 1
                 self._update_fps()
                 index += 1
-
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1
