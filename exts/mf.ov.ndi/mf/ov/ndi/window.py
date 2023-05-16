@@ -145,8 +145,8 @@ class Window(ui.Window):
         self._model.apply_lowbandwidth_value(dynamic_id, value)
         self._model.set_lowbandwidth_prim_attr(dynamic_id, value)
 
-    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn) -> bool:
-        return self._model.try_add_stream(binding, lowbandwidth, update_fps_fn)
+    def try_add_stream(self, binding: Binding, lowbandwidth: bool, update_fps_fn, update_dimensions_fn) -> bool:
+        return self._model.try_add_stream(binding, lowbandwidth, update_fps_fn, update_dimensions_fn)
 
     def stop_stream(self, binding: Binding):
         return self._model.stop_stream(binding)
@@ -217,7 +217,7 @@ class BindingPanel(ui.CollapsableFrame):
             binding, _, _ = self._get_data()
             if not self._info_window:
                 self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", binding.ndi_source,
-                                                     width=280, height=140)
+                                                     width=280, height=180)
                 self._info_window.set_visibility_changed_fn(self._info_window_visibility_changed)
             elif self._info_window:
                 self._info_window_destroy()
@@ -239,6 +239,10 @@ class BindingPanel(ui.CollapsableFrame):
     def update_fps(self, fps_current: float, fps_average: float, fps_expected: float):
         if self._info_window:
             self._info_window.set_fps_values(fps_current, fps_average, fps_expected)
+
+    def update_dimensions(self, width: int, height: int):
+        if self._info_window:
+            self._info_window.set_stream_dimensions(width, height)
     # endregion
 
     def combobox_items_changed(self, items: List[str]):
@@ -294,7 +298,7 @@ class BindingPanel(ui.CollapsableFrame):
             self._window.stop_stream(binding)
             self.on_stop_stream()
         else:
-            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps):
+            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps, self.update_dimensions):
                 self._on_play_stream()
 
     def _set_combobox_alt_text(self, text: str):
@@ -327,23 +331,38 @@ class StreamInfoWindow(ui.Window):
                 self._stream_name_model = ui.StringField(enabled=False).model
                 self._stream_name_model.set_value(self._stream_name)
             with ui.HStack():
-                ui.Label("current fps:")
+                ui.Label("Current fps:")
                 self._fps_current_model = ui.FloatField(enabled=False).model
                 self._fps_current_model.set_value(0.0)
             with ui.HStack():
-                ui.Label("average fps:")
+                ui.Label("Average fps:")
                 self._fps_average_model = ui.FloatField(enabled=False).model
                 self._fps_average_model.set_value(0.0)
             with ui.HStack():
-                ui.Label("expected fps:")
+                ui.Label("Expected fps:")
                 self._fps_expected_model = ui.FloatField(enabled=False).model
                 self._fps_expected_model.set_value(0.0)
+            with ui.HStack():
+                ui.Label("Width:")
+                self._dimensions_width_model = ui.IntField(enabled=False).model
+                self._dimensions_width_model.set_value(0)
+            with ui.HStack():
+                ui.Label("Height:")
+                self._dimensions_height_model = ui.IntField(enabled=False).model
+                self._dimensions_height_model.set_value(0)
 
     def set_fps_values(self, fps_current: float, fps_average: float, fps_expected: float):
+        # If this property exists, all the other do as well since its the last one to be initialized
         if hasattr(self, "_fps_expected_model"):
             self._fps_current_model.set_value(fps_current)
             self._fps_average_model.set_value(fps_average)
             self._fps_expected_model.set_value(fps_expected)
 
     def set_stream_name(self, name: str):
+        # No need to check if attribute exists because no possibility of concurrency between build fn and caller
         self._stream_name_model.set_value(name)
+
+    def set_stream_dimensions(self, width: int, height: int):
+        if hasattr(self, "_dimensions_height_model"):
+            self._dimensions_width_model.set_value(width)
+            self._dimensions_height_model.set_value(height)

@@ -80,8 +80,10 @@ class NDItools():
     def get_stream(self, dynamic_id):
         return next((x for x in self._streams if x.get_id() == dynamic_id), None)
 
-    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, update_fps_fn) -> bool:
-        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self, update_fps_fn)
+    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool,
+                       update_fps_fn, update_dimensions_fn) -> bool:
+        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self,
+                                                update_fps_fn, update_dimensions_fn)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {ndi_source}")
@@ -146,7 +148,8 @@ class NDIfinder():
 class NDIVideoStream():
     NO_FRAME_TIMEOUT = 5  # seconds
 
-    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools, update_fps_fn):
+    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools,
+                 update_fps_fn, update_dimensions_fn):
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
@@ -158,6 +161,7 @@ class NDIVideoStream():
         self._fps_avg_total = 0.0
         self._fps_avg_count = 0
         self._fps_expected = 0.0
+        self._update_dimensions_fn = update_dimensions_fn
 
         self.is_ok = False
 
@@ -262,6 +266,7 @@ class NDIVideoStream():
                 frame = v.data
                 frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
+                self._update_dimensions_fn(width, height)
                 dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
                 carb.profiler.end(4)
@@ -282,7 +287,8 @@ class NDIVideoStream():
 
 
 class NDIVideoStreamProxy():
-    def __init__(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool, fps_update_fn):
+    def __init__(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool,
+                 fps_update_fn, update_dimensions_fn):
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._fps = fps
@@ -294,6 +300,7 @@ class NDIVideoStreamProxy():
         self._fps_avg_total = 0.0
         self._fps_avg_count = 0
         self._fps_expected = 0.0
+        self._update_dimensions_fn = update_dimensions_fn
 
         self.is_ok = False
 
