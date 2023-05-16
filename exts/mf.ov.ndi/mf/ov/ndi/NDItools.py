@@ -245,30 +245,34 @@ class NDIVideoStream():
 
 
             if t == ndi.FRAME_TYPE_VIDEO:
+                carb.profiler.begin(3, 'Omniverse NDI®::prepare frame')
                 fps = v.frame_rate_N / v.frame_rate_D
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
 
                 frame = v.data
                 height, width, channels = frame.shape
+                carb.profiler.end(3)
                 if isGPU:
                     carb.profiler.begin(3, 'Omniverse NDI®::begin gpu')
                     with wp.ScopedDevice("cuda"):
-                        shrinkFactor = width / height
-                        # Resizing
-                        carb.profiler.begin(4, 'Omniverse NDI®::begin gpu resizing')
-                        img_pil = Image.fromarray(frame)
-                        img_pil = img_pil.resize((round(width),round(height*shrinkFactor)))
-                        img_resized = np.array(img_pil)
-                        carb.profiler.end(4)
+                        shouldResize = width != height
+                        if shouldResize:
+                            carb.profiler.begin(4, 'Omniverse NDI®::begin cpu resize')
+                            frame = np.resize(frame, (width, width, channels))
+                            carb.profiler.end(4)
 
                         # Blit
                         carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
-                        pixels_data = wp.from_numpy(img_resized, dtype=wp.uint8, device="cuda")
-                        wp.synchronize()
+
+                        pixels_data = wp.from_numpy(frame, dtype=wp.uint8, device="cuda")
+                        #wp.synchronize()
+
                         carb.profiler.end(4)
+
                         carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
                         dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, round(height*shrinkFactor)])
                         carb.profiler.end(4)
+
                     carb.profiler.end(3)
                 else:
                     carb.profiler.begin(3, 'Omniverse NDI®::begin cpu')
