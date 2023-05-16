@@ -1,4 +1,5 @@
 from .eventsystem import EventSystem
+import warp as wp
 
 import carb.profiler
 import logging
@@ -7,8 +8,10 @@ import numpy as np
 import omni.ui
 import threading
 import time
+
 from typing import List
 
+from PIL import Image
 
 class NDItools():
     def __init__(self):
@@ -146,6 +149,9 @@ class NDIVideoStream():
     NO_FRAME_TIMEOUT = 5  # seconds
 
     def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools):
+        wp.init()
+        wp.config.verify_cuda = True
+       
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
@@ -221,6 +227,7 @@ class NDIVideoStream():
         fps = 120.0
         no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
 
+        isGPU = True
         carb.profiler.end(0)
         while self._is_running:
             carb.profiler.begin(1, 'Omniverse NDI®::loop outer')
@@ -236,16 +243,40 @@ class NDIVideoStream():
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
             carb.profiler.end(3)
 
+
             if t == ndi.FRAME_TYPE_VIDEO:
-                carb.profiler.begin(4, 'Omniverse NDI®::set_data')
                 fps = v.frame_rate_N / v.frame_rate_D
                 # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
+
                 frame = v.data
-                frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
-                dynamic_texture.set_data_array(frame, [width, height, channels])
+                if isGPU:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin gpu')
+                    with wp.ScopedDevice("cuda"):
+                        shrinkFactor = width / height
+                        # Resizing
+                        carb.profiler.begin(4, 'Omniverse NDI®::begin gpu resizing')
+                        img_pil = Image.fromarray(frame)
+                        img_pil = img_pil.resize((round(width),round(height*shrinkFactor)))
+                        img_resized = np.array(img_pil)
+                        carb.profiler.end(4)
+
+                        # Blit
+                        carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
+                        pixels_data = wp.from_numpy(img_resized, dtype=wp.uint8, device="cuda")
+                        wp.synchronize()
+                        carb.profiler.end(4)
+                        carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
+                        dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, round(height*shrinkFactor)])
+                        carb.profiler.end(4)
+                    carb.profiler.end(3)
+                else:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin cpu')
+                    dynamic_texture.set_data_array(frame, [width, height, channels])
+                    carb.profiler.end(3)
+
                 ndi.recv_free_video_v2(self._ndi_recv, v)
-                carb.profiler.end(4)
+                carb.profiler.end(3)
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1

@@ -17,6 +17,7 @@ icon = "data/mf-ov-extensions-icons.png"
 
 [dependencies]
 "omni.kit.uiapp" = {}
+"omni.warp" = {}
 
 [[python.module]]
 name = "mf.ov.ndi"
@@ -24,7 +25,8 @@ name = "mf.ov.ndi"
 [python.pipapi]
 requirements = [
     "ndi-python",
-    "unidecode"
+    "unidecode",
+    "PIL"
 ]
 use_online_index = true
 
