@@ -201,7 +201,7 @@ class NDIVideoStream():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
@@ -318,7 +318,7 @@ class NDIVideoStreamProxy():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
