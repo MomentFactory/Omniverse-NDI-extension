@@ -200,7 +200,7 @@ class NDIVideoStream():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
@@ -262,11 +262,11 @@ class NDIVideoStream():
                 self._fps_expected = fps
                 if (index == 0):
                     self._fps_current = fps
-                # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
+                color_format = v.FourCC
                 frame = v.data
                 frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
-                self._update_dimensions_fn(width, height)
+                self._update_dimensions_fn(width, height, str(color_format))
                 dynamic_texture.set_data_array(frame, [width, height, channels])
                 ndi.recv_free_video_v2(self._ndi_recv, v)
                 carb.profiler.end(4)
@@ -317,7 +317,7 @@ class NDIVideoStreamProxy():
         self.is_ok = True
 
     def _update_fps(self):
-        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count, self._fps_expected)
 
     def destroy(self):
         self._update_fps()
@@ -353,9 +353,9 @@ class NDIVideoStreamProxy():
                 continue
             carb.profiler.begin(2, 'Omniverse NDI®::Proxy loop inner')
             self._fps_current = 1.0 / time_delta
-            self._update_fps()
             self._fps_avg_total += self._fps_current
             self._fps_avg_count += 1
+            self._update_fps()
             last_read = now
 
             carb.profiler.begin(3, 'Omniverse NDI®::set_data')

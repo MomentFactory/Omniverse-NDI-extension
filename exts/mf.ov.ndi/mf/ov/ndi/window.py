@@ -217,7 +217,7 @@ class BindingPanel(ui.CollapsableFrame):
             binding, _, _ = self._get_data()
             if not self._info_window:
                 self._info_window = StreamInfoWindow(f"{self._dynamic_id} info", binding.ndi_source,
-                                                     width=280, height=180)
+                                                     width=280, height=200)
                 self._info_window.set_visibility_changed_fn(self._info_window_visibility_changed)
             elif self._info_window:
                 self._info_window_destroy()
@@ -240,9 +240,9 @@ class BindingPanel(ui.CollapsableFrame):
         if self._info_window:
             self._info_window.set_fps_values(fps_current, fps_average, fps_expected)
 
-    def update_dimensions(self, width: int, height: int):
+    def update_details(self, width: int, height: int, color_format: str):
         if self._info_window:
-            self._info_window.set_stream_dimensions(width, height)
+            self._info_window.set_stream_details(width, height, color_format)
     # endregion
 
     def combobox_items_changed(self, items: List[str]):
@@ -298,7 +298,7 @@ class BindingPanel(ui.CollapsableFrame):
             self._window.stop_stream(binding)
             self.on_stop_stream()
         else:
-            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps, self.update_dimensions):
+            if self._window.try_add_stream(binding, self._lowbandwidth_value, self.update_fps, self.update_details):
                 self._on_play_stream()
 
     def _set_combobox_alt_text(self, text: str):
@@ -350,6 +350,10 @@ class StreamInfoWindow(ui.Window):
                 ui.Label("Height:")
                 self._dimensions_height_model = ui.IntField(enabled=False).model
                 self._dimensions_height_model.set_value(0)
+            with ui.HStack():
+                ui.Label("Stream name:")
+                self._color_format_model = ui.StringField(enabled=False).model
+                self._color_format_model.set_value("")
 
     def set_fps_values(self, fps_current: float, fps_average: float, fps_expected: float):
         # If this property exists, all the other do as well since its the last one to be initialized
@@ -362,7 +366,19 @@ class StreamInfoWindow(ui.Window):
         # No need to check if attribute exists because no possibility of concurrency between build fn and caller
         self._stream_name_model.set_value(name)
 
-    def set_stream_dimensions(self, width: int, height: int):
-        if hasattr(self, "_dimensions_height_model"):
+        # Reset other values
+        self._fps_current_model.set_value(0.0)
+        self._fps_average_model.set_value(0.0)
+        self._fps_expected_model.set_value(0.0)
+        self._dimensions_width_model.set_value(0)
+        self._dimensions_height_model.set_value(0)
+        self._color_format_model.set_value("")
+
+    def set_stream_details(self, width: int, height: int, color_format: str):
+        if hasattr(self, "_color_format_model"):
             self._dimensions_width_model.set_value(width)
             self._dimensions_height_model.set_value(height)
+
+            # Original format is similar to FourCCVideoType.FOURCC_VIDEO_TYPE_RGBA, we want to display only "RGBA"
+            color_format_simple = color_format.split("_")[-1]
+            self._color_format_model.set_value(color_format_simple)
