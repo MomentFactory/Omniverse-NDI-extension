@@ -1,5 +1,5 @@
 from .eventsystem import EventSystem
-import warp as wp
+
 
 import carb.profiler
 import logging
@@ -8,9 +8,8 @@ import numpy as np
 import omni.ui
 import threading
 import time
-
 from typing import List
-
+import warp as wp
 
 class NDItools():
     def __init__(self):
@@ -150,7 +149,7 @@ class NDIfinder():
 
 class NDIVideoStream():
     NO_FRAME_TIMEOUT = 5  # seconds
-  
+
     def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools,
                  update_fps_fn, update_dimensions_fn):
         wp.init()
@@ -270,7 +269,7 @@ class NDIVideoStream():
                     self._fps_current = fps
                 color_format = v.FourCC
                 frame = v.data
-                height, width, channels = v.data.shape
+                height, width, channels = frame.shape
 
                 isGPU = height == width
                 carb.profiler.end(3)
