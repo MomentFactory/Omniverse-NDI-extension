@@ -29,7 +29,6 @@ class NDIData():
 
 class BindingsModel():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE, False)
-    PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
 
     def __init__(self):
         self._bindings: List[Binding] = []
@@ -37,7 +36,6 @@ class BindingsModel():
         self._ndi_sources: List[NDIData] = []
 
         self._ndi_sources.append(BindingsModel.NONE_DATA)
-        self._ndi_sources.append(BindingsModel.PROXY_DATA)
 
         self._sub = EventSystem.subscribe(EventSystem.NDIFINDER_NEW_SOURCES, self._ndi_sources_change_evt_callback)
 
@@ -62,7 +60,7 @@ class BindingsModel():
         return [x.source for x in self._ndi_sources]
 
     def _get_non_static_source_list(self) -> List[NDIData]:
-        return self._ndi_sources[2:]  # Excludes NONE_DATA and PROXY_DATA
+        return self._ndi_sources[1:]  # Excludes NONE_DATA
 
     def get_prim_list(self) -> List[str]:
         return [x for x in self._dynamic_prims]

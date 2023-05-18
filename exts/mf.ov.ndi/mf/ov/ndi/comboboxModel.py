@@ -51,7 +51,7 @@ class ComboboxModel(ui.AbstractItemModel):
         return self._items
 
     # minimal model implementation
-    def get_item_value_model(self, item, column_id):
+    def get_item_value_model(self, item, _):
         if item is None:
             return self._current_index
         return item.model

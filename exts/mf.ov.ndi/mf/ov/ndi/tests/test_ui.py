@@ -2,7 +2,7 @@ import omni.kit.test
 from ..window import Window, BindingPanel
 from ..comboboxModel import ComboboxModel
 from .test_utils import (make_stage, close_stage, get_window, DYNAMIC_ID1, DYNAMIC_ID2, create_dynamic_material,
-                         create_dynamic_rectlight, refresh_dynamic_list, get_dynamic_material_prim)
+                         create_dynamic_rectlight, refresh_dynamic_list, get_dynamic_material_prim, add_proxy_source)
 
 
 class UITestsHeader(omni.kit.test.AsyncTestCase):
@@ -66,6 +66,7 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
 
     async def test_combobox_defaults(self):
         await refresh_dynamic_list(self._window)
+        add_proxy_source(self._window.widget)
 
         button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
@@ -75,7 +76,7 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
         self.assertEqual(model._current_value(), ComboboxModel.NONE_VALUE)
 
         model._current_index.set_value(1)
-        self.assertEqual(model._current_value(), ComboboxModel.PROXY_VALUE)
+        self.assertNotEquals(model._current_value(), ComboboxModel.NONE_VALUE)
 
         model._current_index.set_value(0)
         self.assertEqual(model._current_value(), ComboboxModel.NONE_VALUE)
@@ -99,6 +100,7 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
 
     async def test_low_bandwidth_stream(self):
         await refresh_dynamic_list(self._window)
+        add_proxy_source(self._window.widget)
 
         button = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button.click()
@@ -125,6 +127,7 @@ class UITestsPanel(omni.kit.test.AsyncTestCase):
 
     async def test_proxy_play_pause(self):
         await refresh_dynamic_list(self._window)
+        add_proxy_source(self._window.widget)
 
         button_create = self._window.find(f"**/Button[*].text=='{Window.NEW_TEXTURE_BTN_TXT}'")
         await button_create.click()
