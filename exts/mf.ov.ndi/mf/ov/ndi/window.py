@@ -356,7 +356,7 @@ class StreamInfoWindow(ui.Window):
                 self._dimensions_height_model = ui.IntField(enabled=False).model
                 self._dimensions_height_model.set_value(0)
             with ui.HStack():
-                ui.Label("Stream name:")
+                ui.Label("Color format:")
                 self._color_format_model = ui.StringField(enabled=False).model
                 self._color_format_model.set_value("")
 
