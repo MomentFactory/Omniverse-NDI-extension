@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Streams stop when refreshing or adding a new dynamic texture to prevent ghost streams
 - Removed the possibility of overwriting a stream when creating a new one with the same name
+- Removed the double color conversion by requesting RGBA color profile from NDI®
 
 ## Removed
 - Proxy stream no longer available in the list of streams
