@@ -1,5 +1,5 @@
 [package]
-version = "0.11.0"
+version = "0.12.0"
 
 title = "MF NDI® extension"
 description = "An extension to enable NDI® live video input in Omniverse."
