@@ -1,5 +1,6 @@
 from .eventsystem import EventSystem
 
+
 import carb.profiler
 import logging
 import NDIlib as ndi
@@ -8,7 +9,7 @@ import omni.ui
 import threading
 import time
 from typing import List
-
+import warp as wp
 
 class NDItools():
     def __init__(self):
@@ -150,6 +151,8 @@ class NDIVideoStream():
 
     def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools,
                  update_fps_fn, update_dimensions_fn):
+        wp.init()
+
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
@@ -217,13 +220,13 @@ class NDIVideoStream():
 
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_HIGHEST
         return recv_create_desc
 
     def get_recv_low_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_LOWEST
         return recv_create_desc
 
@@ -256,20 +259,50 @@ class NDIVideoStream():
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
             carb.profiler.end(3)
 
+
             if t == ndi.FRAME_TYPE_VIDEO:
-                carb.profiler.begin(4, 'Omniverse NDI®::set_data')
+                carb.profiler.begin(3, 'Omniverse NDI®::prepare frame')
                 fps = v.frame_rate_N / v.frame_rate_D
                 self._fps_expected = fps
                 if (index == 0):
                     self._fps_current = fps
                 color_format = v.FourCC
                 frame = v.data
-                frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
-                self._update_dimensions_fn(width, height, str(color_format))
-                dynamic_texture.set_data_array(frame, [width, height, channels])
+
+                isGPU = height == width
+                carb.profiler.end(3)
+                if isGPU:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin gpu')
+                    with wp.ScopedDevice("cuda"):
+                        # CUDA doesnt handle non square texture well, so we need to resize if the te
+                        # We are keeping this code in case we find a workaround
+                        #
+                        #    carb.profiler.begin(4, 'Omniverse NDI®::begin cpu resize')
+                        #    frame = np.resize(frame, (width, width, channels))
+                        #    carb.profiler.end(4)
+
+                        # 38 ms
+                        carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
+                        pixels_data = wp.from_numpy(frame, dtype=wp.uint8, device="cuda")
+                        carb.profiler.end(4)
+
+                        # 1 ms
+                        carb.profiler.begin(4, 'Omniverse NDI®::create gpu texture')
+                        self._update_dimensions_fn(width, height, str(color_format))
+                        dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, width])
+                        carb.profiler.end(4)
+
+                    carb.profiler.end(3)
+                else:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin cpu')
+                    self._update_dimensions_fn(width, height, str(color_format))
+                    dynamic_texture.set_data_array(frame, [width, height, channels])
+                    carb.profiler.end(3)
+
                 ndi.recv_free_video_v2(self._ndi_recv, v)
-                carb.profiler.end(4)
+                carb.profiler.end(3)
+
                 self._fps_avg_total += self._fps_current
                 self._fps_avg_count += 1
                 self._update_fps()

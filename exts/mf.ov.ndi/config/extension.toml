@@ -17,6 +17,7 @@ icon = "data/mf-ov-extensions-icons.png"
 
 [dependencies]
 "omni.kit.uiapp" = {}
+"omni.warp" = {}
 
 [[python.module]]
 name = "mf.ov.ndi"
