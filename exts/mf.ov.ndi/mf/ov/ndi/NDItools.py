@@ -1,5 +1,6 @@
 from .eventsystem import EventSystem
 
+
 import carb.profiler
 import logging
 import NDIlib as ndi
@@ -8,7 +9,7 @@ import omni.ui
 import threading
 import time
 from typing import List
-
+import warp as wp
 
 class NDItools():
     def __init__(self):
@@ -80,8 +81,10 @@ class NDItools():
     def get_stream(self, dynamic_id):
         return next((x for x in self._streams if x.get_id() == dynamic_id), None)
 
-    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool) -> bool:
-        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self)
+    def try_add_stream(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool,
+                       update_fps_fn, update_dimensions_fn) -> bool:
+        stream: NDIVideoStream = NDIVideoStream(dynamic_id, ndi_source, lowbandwidth, self,
+                                                update_fps_fn, update_dimensions_fn)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
             logger.error(f"Error opening stream: {ndi_source}")
@@ -90,7 +93,8 @@ class NDItools():
         self._streams.append(stream)
         return True
 
-    def try_add_stream_proxy(self, dynamic_id: str, ndi_source: str, fps: float, lowbandwidth: bool) -> bool:
+    def try_add_stream_proxy(self, dynamic_id: str, ndi_source: str, fps: float,
+                             lowbandwidth: bool) -> bool:
         stream: NDIVideoStreamProxy = NDIVideoStreamProxy(dynamic_id, ndi_source, fps, lowbandwidth)
         if not stream.is_ok:
             logger = logging.getLogger(__name__)
@@ -145,12 +149,22 @@ class NDIfinder():
 class NDIVideoStream():
     NO_FRAME_TIMEOUT = 5  # seconds
 
-    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools):
+    def __init__(self, dynamic_id: str, ndi_source: str, lowbandwidth: bool, tools: NDItools,
+                 update_fps_fn, update_dimensions_fn):
+        wp.init()
+
         self._dynamic_id = dynamic_id
         self._ndi_source = ndi_source
         self._lowbandwidth = lowbandwidth
         self._thread: threading.Thread = None
         self._ndi_recv = None
+
+        self._update_fps_fn = update_fps_fn
+        self._fps_current = 0.0
+        self._fps_avg_total = 0.0
+        self._fps_avg_count = 0
+        self._fps_expected = 0.0
+        self._update_dimensions_fn = update_dimensions_fn
 
         self.is_ok = False
 
@@ -188,7 +202,11 @@ class NDIVideoStream():
 
         self.is_ok = True
 
+    def _update_fps(self):
+        self._update_fps_fn(self._fps_current, self._fps_avg_total / self._fps_avg_count if self._fps_avg_count != 0 else 0, self._fps_expected)
+
     def destroy(self):
+        self._update_fps()
         self._is_running = False
         self._thread.join()
         self._thread = None
@@ -202,13 +220,13 @@ class NDIVideoStream():
 
     def get_recv_high_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_HIGHEST
         return recv_create_desc
 
     def get_recv_low_bandwidth(self):
         recv_create_desc = ndi.RecvCreateV3()
-        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_BGRX_BGRA
+        recv_create_desc.color_format = ndi.RECV_COLOR_FORMAT_RGBX_RGBA
         recv_create_desc.bandwidth = ndi.RECV_BANDWIDTH_LOWEST
         return recv_create_desc
 
@@ -220,6 +238,10 @@ class NDIVideoStream():
         last_read = time.time() - 1  # Make sure we run on the first frame
         fps = 120.0
         no_frame_chances = NDIVideoStream.NO_FRAME_TIMEOUT * fps
+        index = 0
+
+        self._fps_avg_total = 0.0
+        self._fps_avg_count = 0
 
         carb.profiler.end(0)
         while self._is_running:
@@ -230,22 +252,61 @@ class NDIVideoStream():
                 carb.profiler.end(1)
                 continue
             carb.profiler.begin(2, 'Omniverse NDI®::loop inner')
+            self._fps_current = 1.0 / time_delta
             last_read = now
 
             carb.profiler.begin(3, 'Omniverse NDI®::receive frame')
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
             carb.profiler.end(3)
 
+
             if t == ndi.FRAME_TYPE_VIDEO:
-                carb.profiler.begin(4, 'Omniverse NDI®::set_data')
+                carb.profiler.begin(3, 'Omniverse NDI®::prepare frame')
                 fps = v.frame_rate_N / v.frame_rate_D
-                # print(v.FourCC) = FourCCVideoType.FOURCC_VIDEO_TYPE_BGRA, might indicate omni.ui.TextureFormat
+                self._fps_expected = fps
+                if (index == 0):
+                    self._fps_current = fps
+                color_format = v.FourCC
                 frame = v.data
-                frame[..., :3] = frame[..., 2::-1]  # TODO: BGRA to RGBA (Could be done in shader?)
                 height, width, channels = frame.shape
-                dynamic_texture.set_data_array(frame, [width, height, channels])
+
+                isGPU = height == width
+                carb.profiler.end(3)
+                if isGPU:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin gpu')
+                    with wp.ScopedDevice("cuda"):
+                        # CUDA doesnt handle non square texture well, so we need to resize if the te
+                        # We are keeping this code in case we find a workaround
+                        #
+                        #    carb.profiler.begin(4, 'Omniverse NDI®::begin cpu resize')
+                        #    frame = np.resize(frame, (width, width, channels))
+                        #    carb.profiler.end(4)
+
+                        # 38 ms
+                        carb.profiler.begin(4, 'Omniverse NDI®::gpu uploading')
+                        pixels_data = wp.from_numpy(frame, dtype=wp.uint8, device="cuda")
+                        carb.profiler.end(4)
+
+                        # 1 ms
+                        carb.profiler.begin(4, 'Omniverse NDI®::create gpu texture')
+                        self._update_dimensions_fn(width, height, str(color_format))
+                        dynamic_texture.set_bytes_data_from_gpu(pixels_data.ptr, [width, width])
+                        carb.profiler.end(4)
+
+                    carb.profiler.end(3)
+                else:
+                    carb.profiler.begin(3, 'Omniverse NDI®::begin cpu')
+                    self._update_dimensions_fn(width, height, str(color_format))
+                    dynamic_texture.set_data_array(frame, [width, height, channels])
+                    carb.profiler.end(3)
+
                 ndi.recv_free_video_v2(self._ndi_recv, v)
-                carb.profiler.end(4)
+                carb.profiler.end(3)
+
+                self._fps_avg_total += self._fps_current
+                self._fps_avg_count += 1
+                self._update_fps()
+                index += 1
 
             if t == ndi.FRAME_TYPE_NONE:
                 no_frame_chances -= 1
@@ -314,5 +375,6 @@ class NDIVideoStreamProxy():
             carb.profiler.begin(3, 'Omniverse NDI®::set_data')
             dynamic_texture.set_data_array(frame, [width, height, channels])
             carb.profiler.end(3)
+
             carb.profiler.end(2)
             carb.profiler.end(1)

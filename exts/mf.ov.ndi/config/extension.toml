@@ -1,5 +1,5 @@
 [package]
-version = "0.11.0"
+version = "0.12.0"
 
 title = "MF NDI® extension"
 description = "An extension to enable NDI® live video input in Omniverse."
@@ -17,6 +17,7 @@ icon = "data/mf-ov-extensions-icons.png"
 
 [dependencies]
 "omni.kit.uiapp" = {}
+"omni.warp" = {}
 
 [[python.module]]
 name = "mf.ov.ndi"

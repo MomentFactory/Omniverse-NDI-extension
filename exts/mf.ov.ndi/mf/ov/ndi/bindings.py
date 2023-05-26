@@ -29,7 +29,6 @@ class NDIData():
 
 class BindingsModel():
     NONE_DATA = NDIData(ComboboxModel.NONE_VALUE, False)
-    PROXY_DATA = NDIData(ComboboxModel.PROXY_VALUE, True)
 
     def __init__(self):
         self._bindings: List[Binding] = []
@@ -37,7 +36,6 @@ class BindingsModel():
         self._ndi_sources: List[NDIData] = []
 
         self._ndi_sources.append(BindingsModel.NONE_DATA)
-        self._ndi_sources.append(BindingsModel.PROXY_DATA)
 
         self._sub = EventSystem.subscribe(EventSystem.NDIFINDER_NEW_SOURCES, self._ndi_sources_change_evt_callback)
 
@@ -54,7 +52,7 @@ class BindingsModel():
 
     def get(self, index: int) -> Binding:
         binding: Binding = self._bindings[index]
-        prim: DynamicPrim = self._find_binding_from_id(binding.dynamic_id)
+        prim: DynamicPrim = self.find_binding_from_id(binding.dynamic_id)
         ndi: NDIData = self._find_ndi_from_source(binding.ndi_source)
         return binding, prim, ndi
 
@@ -62,20 +60,20 @@ class BindingsModel():
         return [x.source for x in self._ndi_sources]
 
     def _get_non_static_source_list(self) -> List[NDIData]:
-        return self._ndi_sources[2:]  # Excludes NONE_DATA and PROXY_DATA
+        return self._ndi_sources[1:]  # Excludes NONE_DATA
 
     def get_prim_list(self) -> List[str]:
         return [x for x in self._dynamic_prims]
 
     def bind(self, dynamic_id, new_source):
-        binding: Binding = self._find_binding_from_id(dynamic_id)
+        binding: Binding = self.find_binding_from_id(dynamic_id)
         binding.ndi_source = new_source
 
     def set_low_bandwidth(self, dynamic_id: str, value: bool):
-        binding: Binding = self._find_binding_from_id(dynamic_id)
+        binding: Binding = self.find_binding_from_id(dynamic_id)
         binding.lowbandwidth = value
 
-    def _find_binding_from_id(self, dynamic_id: str) -> Binding:
+    def find_binding_from_id(self, dynamic_id: str) -> Binding:
         return next((x for x in self._bindings if x.dynamic_id == dynamic_id), None)
 
     def _find_binding_from_ndi(self, ndi_source: str) -> Binding:
