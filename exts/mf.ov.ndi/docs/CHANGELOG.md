@@ -4,8 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
-- NDI® source monitoring (dimensions, fps, etc.)
+## [0.12.0] - 2023-05-18
+
+### Added
+- Display stream statistics when running (fps, dimensions, color format)
+    - Opens as a new window when left-clicking on the status dot of a particular stream
+
+### Changed
+- Improved performances when using GPU for texture copy when stream source is square
+
+### Fixed
+- Streams stop when refreshing or adding a new dynamic texture to prevent ghost streams
+- Removed the possibility of overwriting a stream when creating a new one with the same name
+- Removed the double color conversion by requesting RGBA color profile from NDI®
+
+## Removed
+- Proxy stream no longer available in the list of streams
 
 ## [0.11.0] - 2023-04-20
 
