@@ -25,6 +25,8 @@ class Window(ui.Window):
         self._model: Model = Model()
         self._bindingPanels: List[BindingPanel] = []
 
+        self._last_material_name = Window.DEFAULT_TEXTURE_NAME
+
         super().__init__(Window.WINDOW_NAME, **kwargs)
         self.frame.set_build_fn(self._build_fn)
 
@@ -99,7 +101,7 @@ class Window(ui.Window):
 
         with ui.HStack(height=0):
             self._dynamic_name = ui.StringField()
-            self._dynamic_name.model.set_value(Window.DEFAULT_TEXTURE_NAME)
+            self._dynamic_name.model.set_value(self._last_material_name)
             ui.Button(Window.NEW_TEXTURE_BTN_TXT, image_url="resources/glyphs/menu_plus.svg", image_width=24,
                       style=button_style, clicked_fn=self._on_click_create_dynamic_material)
 
@@ -124,6 +126,7 @@ class Window(ui.Window):
     def _on_click_create_dynamic_material(self):
         self._stop_all_streams()
         name: str = self._dynamic_name.model.get_value_as_string()
+        self._last_material_name = name
         self._model.create_dynamic_material(name)
 
     def _on_click_refresh_materials(self):
