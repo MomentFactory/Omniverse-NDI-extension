@@ -41,12 +41,13 @@ class Model():
             logger = logging.getLogger(__name__)
             logger.warn(f"Name \"{name}\" was not a valid USD identifier, changed it to \"{safename}\"")
 
-        if self._bindings_model.find_binding_from_id(safename) is not None:
-            logger = logging.getLogger(__name__)
-            logger.warning(f"There's already a texture with the name {safename}")
-            return
+        final_name = safename
+        index = 1
+        while (self._bindings_model.find_binding_from_id(final_name) is not None):
+            final_name = safename + str(index)
+            index += 1
 
-        USDtools.create_dynamic_material(safename)
+        USDtools.create_dynamic_material(final_name)
         self.search_for_dynamic_material()
 
     def search_for_dynamic_material(self):
