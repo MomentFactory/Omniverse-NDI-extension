@@ -44,7 +44,8 @@ class Model():
         final_name = safename
         index = 1
         while (self._bindings_model.find_binding_from_id(final_name) is not None):
-            final_name = safename + str(index)
+            suffix = str(index) if index >= 10 else "0" + str(index)  # name, name_01, name_02, ..., name_99, name_100
+            final_name = safename + "_" + suffix
             index += 1
 
         USDtools.create_dynamic_material(final_name)
