@@ -69,22 +69,35 @@ class USDtools():
 
         prefix_length: int = len(USDtools.PREFIX)
         for shader in shaders:
-            texture_input = shader.GetInput("diffuse_texture")
-            texture_value = texture_input.Get()
-            if texture_value:
-                path: str = texture_value.path
-                if len(path) > prefix_length:
-                    candidate = path[:prefix_length]
-                    if candidate == USDtools.PREFIX:
-                        name = path[prefix_length:]
-                        if name not in sources:
-                            sources.append(name)
-                            attr_ndi = shader.GetPrim().GetAttribute(USDtools.ATTR_NDI_NAME)
-                            attr_ndi = attr_ndi.Get() if attr_ndi.IsValid() else None
-                            attr_low = shader.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
-                            attr_low = attr_low.Get() if attr_low.IsValid() else False
-                            p = DynamicPrim(shader.GetPath().pathString, name, attr_ndi, attr_low)
-                            result.append(p)
+            albedo = shader.GetInput("diffuse_texture").Get()
+            # roughness = shader.GetInput("reflectionroughness_texture").Get()
+            # metallic = shader.GetInput("metallic_texture").Get()
+            # orm = shader.GetInput("ORM_texture").Get()
+            # ambient_occlusion = shader.GetInput("ao_texture").Get()
+            emissive = shader.GetInput("emissive_color_texture").Get()
+            # emissive_mask = shader.GetInput("emissive_mask_texture").Get()
+            # opacity = shader.GetInput("opacity_texture").Get()
+            # normal = shader.GetInput("normalmap_texture").Get()
+            # normal_detail = shader.GetInput("detail_normalmap_texture").Get()
+
+            values_set = set([albedo, emissive])
+            values_unique = list(values_set)
+
+            for texture_value in values_unique:
+                if texture_value:
+                    path: str = texture_value.path
+                    if len(path) > prefix_length:
+                        candidate = path[:prefix_length]
+                        if candidate == USDtools.PREFIX:
+                            name = path[prefix_length:]
+                            if name not in sources:
+                                sources.append(name)
+                                attr_ndi = shader.GetPrim().GetAttribute(USDtools.ATTR_NDI_NAME)
+                                attr_ndi = attr_ndi.Get() if attr_ndi.IsValid() else None
+                                attr_low = shader.GetPrim().GetAttribute(USDtools.ATTR_BANDWIDTH_NAME)
+                                attr_low = attr_low.Get() if attr_low.IsValid() else False
+                                p = DynamicPrim(shader.GetPath().pathString, name, attr_ndi, attr_low)
+                                result.append(p)
 
         return result, sources
 
