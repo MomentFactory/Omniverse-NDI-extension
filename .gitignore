@@ -6,6 +6,7 @@ _*/
 
 # byte-compiled python files
 *.py[cod]
+!**/deps/**/*py[cod]
 
 /.vs
 

@@ -1,15 +1,15 @@
 from .eventsystem import EventSystem
 
-
 import carb.profiler
 import logging
-import NDIlib as ndi
+from .deps import NDIlib as ndi
 import numpy as np
 import omni.ui
 import threading
 import time
 from typing import List
 import warp as wp
+
 
 class NDItools():
     def __init__(self):
@@ -258,7 +258,6 @@ class NDIVideoStream():
             carb.profiler.begin(3, 'Omniverse NDI®::receive frame')
             t, v, _, _ = ndi.recv_capture_v2(self._ndi_recv, 0)
             carb.profiler.end(3)
-
 
             if t == ndi.FRAME_TYPE_VIDEO:
                 carb.profiler.begin(3, 'Omniverse NDI®::prepare frame')
