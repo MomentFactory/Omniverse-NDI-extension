@@ -1,8 +1,14 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## [1.0.0] - 2023-07-18
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+### Added
+- Compatibility with USD Composer 2023.1.1
+
+### Changed
+- Creating a texture with the same name doesn't block (will follow pattern: "name", "name_01", "name_02", ...)
+- Bundle pip dependency `ndi-python` with the extension
+- Search now look for dynamic texture in the emissive texture field
 
 ## [0.12.0] - 2023-05-18
 
