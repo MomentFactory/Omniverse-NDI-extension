@@ -1,5 +1,5 @@
 [package]
-version = "0.12.0"
+version = "1.0.0"
 
 title = "MF NDI® extension"
 description = "An extension to enable NDI® live video input in Omniverse."
@@ -24,7 +24,6 @@ name = "mf.ov.ndi"
 
 [python.pipapi]
 requirements = [
-    "ndi-python",
     "unidecode"
 ]
 use_online_index = true
