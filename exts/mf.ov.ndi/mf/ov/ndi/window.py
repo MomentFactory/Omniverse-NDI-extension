@@ -93,6 +93,10 @@ class Window(ui.Window):
     def _stage_event_evt_callback(self, e: carb.events.IEvent):
         if USDtools.is_StageEventType_OPENED(e.type):
             self._model.search_for_dynamic_material()
+            self._model.stop_all_streams()
+
+        if USDtools.is_StageEventType_CLOSE(e.type):
+            self._model.stop_all_streams()
 # endregion
 
 # region UI
