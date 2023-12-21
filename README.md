@@ -6,6 +6,7 @@ An extension to enable NDI® live video input in Omniverse.
 
 - Requires Omniverse Kit  105.1
 - Tested in USD Composer 2023.1.1
+- Previous release should still be supported in Create 2022.x
 - Requires [NDI® 5.5.3 runtime for Windows](https://go.ndi.tv/tools-for-windows)
 
 This plugin is using the `dynamic://` keyword which is currently a beta feature of Omniverse.
