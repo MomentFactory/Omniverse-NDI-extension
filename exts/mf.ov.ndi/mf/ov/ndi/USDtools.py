@@ -164,4 +164,7 @@ class USDtools():
 
     def is_StageEventType_OPENED(type) -> bool:
         return type == int(omni.usd.StageEventType.OPENED)
+
+    def is_StageEventType_CLOSE(type) -> bool:
+        return type == int(omni.usd.StageEventType.CLOSING) or type == int(omni.usd.StageEventType.CLOSED)
 # endregion
