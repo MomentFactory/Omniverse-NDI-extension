@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2023-12-21
+
+### Fixed
+- Stream properly shut down when closing, opening, or reopening stage
+
 ## [1.0.0] - 2023-07-18
 
 ### Added

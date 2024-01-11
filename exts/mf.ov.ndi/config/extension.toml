@@ -1,5 +1,5 @@
 [package]
-version = "1.0.0"
+version = "1.0.1"
 
 title = "MF NDI® extension"
 description = "An extension to enable NDI® live video input in Omniverse."
@@ -38,3 +38,9 @@ dependencies = [
     "omni.usd"
 ]
 timeout = 60
+
+[package.target]
+kit = ["105.1"]
+
+[package.writeTarget]
+kit = true

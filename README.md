@@ -4,13 +4,31 @@ An extension to enable NDI® live video input in Omniverse.
 
 ## Getting started
 
-- Requires Omniverse Kit >= 104.1
-- Tested in Create 2022.3.3, Code 2022.3.3
+- Requires Omniverse Kit >= 105
+- Requires USD Composer > 2023.1.0
 - Requires [NDI® 5.5.3 runtime for Windows](https://go.ndi.tv/tools-for-windows)
 
-This plugin is using the `dynamic://` keyword which is currently a beta feature of Omniverse.
+Previous releases should still be supported in USD composer 2022.x
 
-## Extension window
+This plugin leverages the `dynamic://` keyword which is currently a beta feature of Omniverse.
+
+## Using the extension
+
+⚠️You should disable Render Settings > Raytracing > Eco Mode for the extension to work properly.
+
+### Enable the extension 
+
+In USD Composer :
+- Windows > Extensions
+- Switch to THIRD PARY tab
+- Install and enable the extension ######
+
+You may want to use [example.usda](./example.usda) in Create for your first test.
+
+### Extension window
+
+If not opened automatically : Windows > NDI®
+
 ![preview](./exts/mf.ov.ndi/data/ui.png)
 
 ### Window header
@@ -28,17 +46,6 @@ The title is the name of your dynamic texture.
 - ⏸️ Allows to start/stop the video feed.
 - 🖼️ Allows to switch the feed to Low bandwidth mode, saving performance by decreasing resolution for a particular feed.
 - 🗇 To copy to clipboard the identifiers of the dynamic texture Example `dynamic://myDynamicMaterial`
-
-## Application startup
-
-```
-$ ./link_app.bat --app create
-$ ./app/omni.create.bat --/rtx/ecoMode/enabled=false --ext-folder exts --enable mf.ov.ndi
-```
-
-On simply search for this community extension within the Extension Window of Create
-
-You may want to use [example.usda](./example.usda) in Create for your first test.
 
 ## Resources
 - [kit-cv-video-example](https://github.com/jshrake-nvidia/kit-cv-video-example)
