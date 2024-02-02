@@ -19,15 +19,15 @@ This plugin leverages the `dynamic://` keyword which is currently a beta feature
 ### Enable the extension 
 
 In USD Composer :
-- Windows > Extensions
-- Switch to THIRD PARY tab
-- Install and enable the extension ######
+- Windows > Extensions.
+- Switch to THIRD PARY tab.
+- Install and enable the extension.
 
 You may want to use [example.usda](./example.usda) in Create for your first test.
 
 ### Extension window
 
-If not opened automatically : Windows > NDI®
+If not opened automatically : Windows > NDI®.
 
 ![preview](./exts/mf.ov.ndi/data/ui.png)
 
@@ -48,6 +48,7 @@ The title is the name of your dynamic texture.
 - 🗇 To copy to clipboard the identifiers of the dynamic texture Example `dynamic://myDynamicMaterial`
 
 ## Resources
+- Inspired by : [kit-extension-template](https://github.com/NVIDIA-Omniverse/kit-extension-template)
 - [kit-cv-video-example](https://github.com/jshrake-nvidia/kit-cv-video-example)
 - [kit-dynamic-texture-example](https://github.com/jshrake-nvidia/kit-dynamic-texture-example)
 - [ndi-python](https://github.com/buresu/ndi-python)
